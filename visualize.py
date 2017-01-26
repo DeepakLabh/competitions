@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import sys
 import numpy as np
+from scipy.stats.stats import pearsonr   
 
 __saved_context__ = {}
 #plt.rcParams['agg.path.chunksize'] = 1000
@@ -45,7 +46,7 @@ def cor():
 	for i in train_gen(train):
 		j = list(i)
 		# j[1] = map(lambda x: 0 if x==float('nan') else x,j[1])
-		c = np.correlate(y,j[1])
+		c = pearsonr(y,j[1])
 		d[j[0]] = c
 		print j[0],c
 
