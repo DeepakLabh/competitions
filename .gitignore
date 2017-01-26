@@ -1,0 +1,7 @@
+*.png
+*.pyc
+*.bkp
+screenlog*
+*.swp
+*.swo
+no*
