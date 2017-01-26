@@ -29,7 +29,7 @@ def plot_all(data_points):
 			#train = pd.read_hdf('../kaggle_data/train.h5')
 			# float(train[i][1])
 			i = list(i)
-			i[1] = map(lambda x: 0 if x==float('nan') else x,i[1])[:data_points]
+			# i[1] = map(lambda x: 0 if x==float('nan') else x,i[1])[:data_points]
 			plt.plot(i[1])
 			plt.savefig('plots/'+i[0]+'.png')
 			#restoreContext()
@@ -44,14 +44,17 @@ def cor():
 	y = train.y
 	for i in train_gen(train):
 		j = list(i)
-		j[1] = map(lambda x: 0 if x==float('nan') else x,j[1])
+		# j[1] = map(lambda x: 0 if x==float('nan') else x,j[1])
 		c = np.correlate(y,j[1])
 		d[j[0]] = c
 		print j[0],c
 
 if __name__ == '__main__':
 	train = pd.read_hdf('../kaggle_data/train.h5')
-
+	# mean_values = train.mean(axis=0)
+	# train.fillna(mean_values, inplace=True)
+	train.fillna(0)
+	print ('na filled')
 	if sys.argv[-1]=='plot':
 		plot_all(1000)
 	if sys.argv[-1] == 'cor':
