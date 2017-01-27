@@ -22,9 +22,9 @@ min_y = min(train.y)
 # fields_all = train.keys()
 # fields_needed = list(filter(lambda x: isinstance(train[x][0], np.float32), fields_all))
 # fields_needed = fields_needed[:5]
-fields_needed = ['fundamental_18', 'fundamental_2', 'fundamental_11', 'fundamental_16', 'fundamental_3', 'fundamental_9', 'technical_16', 'technical_19', 'fundamental_8', 'technical_25']
+fields_needed = ['fundamental_18', 'fundamental_2', 'fundamental_11', 'fundamental_16']
+# fields_needed = ['fundamental_18', 'fundamental_2', 'fundamental_11', 'fundamental_16', 'fundamental_3', 'fundamental_9', 'technical_16', 'technical_19', 'fundamental_8', 'technical_25']
 # print (fields_needed,111111111111111111111111)
-df = train[fields_needed]
 
 
 out_field = ['y']
@@ -36,8 +36,10 @@ try:
     # fields.remove('timestamp')
 except: pass
 
+df = train[fields_needed]
 mean_values = df.mean(axis=0)
 df.fillna(mean_values, inplace=True)
+df = (df - df.mean()) / (df.max() - df.min())
 x_train= df[fields_needed]
 
 # mean_values = x_train.mean(axis=0) 
@@ -61,8 +63,9 @@ def compile_model(input_shape):
     model = Activation('relu')(model)
 
     # model = Dense(128)(model)
+    model = Dense(16)(model)
+    model = Dense(32)(model)
     model = Dense(64)(model)
-    # model = Dense(32)(model)
     model = Activation('sigmoid')(model)
 
     model = Reshape((8,8))(model)
@@ -95,5 +98,5 @@ input_shape = x_train.shape[1]
 print("initializing model...")
 model = compile_model(input_shape)
 print("fitting model...")
-fit = model.fit_generator(generator=batch_generator(500, train_input=True), nb_epoch=100, samples_per_epoch=train_size)
+fit = model.fit_generator(generator=batch_generator(500, train_input=True), nb_epoch=100, samples_per_epoch=train_size, validation_split = 0.2)
 
