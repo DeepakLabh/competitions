@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from keras.models import  Model
 from random import randint
-from keras.layers import Convolution1D, MaxPooling1D, LSTM, Lambda, Merge, Reshape, GRU, Input, merge, Dense, Activation, Merge, Reshape, Dropout, Flatten
+from keras.layers import Convolution2D, MaxPooling2D, Convolution1D, MaxPooling1D, LSTM, Lambda, Merge, Reshape, GRU, Input, merge, Dense, Activation, Merge, Reshape, Dropout, Flatten
 
 train = pd.read_hdf('../kaggle_data/train.h5')
 
@@ -81,9 +81,38 @@ def compile_model(input_shape):
     model.compile(loss='mae', optimizer='sgd', metrics=['mae'])
     return model
 
+def compile_model_2d(input_shape):
+    input_1 = Input(shape = (input_shape))
+    input_layer = [input_1]
+    
+    model = Convolution2D(10,3,3)(input_1)
+    model = MaxPooling2D((2,2), strides=(1,1), border_mode='valid')(model)
+    model = Activation('relu')(model)
+    print filter(lambda x: not x.endswith('_'),dir(model)),222222222
+    print model.get_shape,22222222222222
+
+    model = Reshape((10,7))(model)
+
+    model_f = LSTM(32, return_sequences=False, go_backwards = False, activation='tanh', inner_activation='hard_sigmoid')
+    model_b = LSTM(32, return_sequences=False, go_backwards = True, activation='tanh', inner_activation='hard_sigmoid')
+
+    model_f = model_f(model)
+    model_f = Activation('relu')(model_f)
+
+    model_b = model_f(model)
+    model_b = Activation('relu')(model_b)
+
+    model_merge = Merge([model_f, model_b], mode='concat', concat_axix=-1)
+
+    model_merge = Dense(64)(model_merge)
+    model_merge = Dense(16)(model_merge)
+    model_merge = Dense(1)(model_merge)
+    model_merge = Activation('linear')(model_merge)
+
+
 train_size = 100000
 
-def batch_generator(batch_size, train_input=True):
+def batch_gen(batch_size):
     while(True):
         i = 0
         i = randint(0, len(df)-train_size)
@@ -93,10 +122,17 @@ def batch_generator(batch_size, train_input=True):
             
         yield x_batch, y_batch
 
-input_shape = x_train.shape[1]
+def batch_gen_2d(batch_size):
+    while True:
+        i = randint(10, len(df)-train_size-10)
+        y_batch = np.array(y_train[i:i+batch_size-1])
+        x_batch = np.array([[y_train[k-j:k+1] for j in range(10,0,-1)] for k in range(i, i+batch_size-1)])
+        yield x_batch, y_batch
 
+# input_shape = x_train.shape[1]
+batch_size = 500
+input_shape = (1,10,x_train.shape[1])
 print("initializing model...")
-model = compile_model(input_shape)
+model = compile_model_2d(input_shape)
 print("fitting model...")
-fit = model.fit_generator(generator=batch_generator(500, train_input=True), nb_epoch=100, samples_per_epoch=train_size, validation_split = 0.2)
-
+fit = model.fit_generator(generator=batch_gen_2d(500, train_input=True), nb_epoch=100, samples_per_epoch=train_size)
