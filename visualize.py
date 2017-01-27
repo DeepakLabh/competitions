@@ -19,7 +19,7 @@ def restoreContext():
 
 def train_gen(data={}):
     for i in data.keys():
-    yield [i,data[i]]
+        yield [i,data[i]]
 
 def plot_all(data_points):  
     fields = train.keys()
@@ -30,7 +30,7 @@ def plot_all(data_points):
             #train = pd.read_hdf('../kaggle_data/train.h5')
             # float(train[i][1])
             i = list(i)
-            # i[1] = map(lambda x: 0 if x==float('nan') else x,i[1])[:data_points]
+            i[1] = map(lambda x: 0 if x==float('nan') else x,i[1])[:data_points]
             plt.plot(i[1])
             plt.savefig('plots/'+i[0]+'.png')
             #restoreContext()
@@ -40,23 +40,30 @@ def plot_all(data_points):
             print e
             pass
 
-def cor():
+def cor(length = 0):
     d = {}
     y = train.y
     for i in train_gen(train):
         j = list(i)
         # j[1] = map(lambda x: 0 if x==float('nan') else x,j[1])
-        c = pearsonr(y,j[1])
+        c = pearsonr(y[:length],j[1][:length])
         d[j[0]] = c
-        print j[0],c
+        # print j[0],c
+    return d
+
+def fields_relation():
+    pass
 
 if __name__ == '__main__':
     train = pd.read_hdf('../kaggle_data/train.h5')
-    # mean_values = train.mean(axis=0)
-    # train.fillna(mean_values, inplace=True)
-    train.fillna(0)
+    mean_values = train.mean(axis=0)
+    train.fillna(mean_values, inplace=True)
+    # train.fillna(0)
     print ('na filled')
     if sys.argv[-1]=='plot':
         plot_all(1000)
     if sys.argv[-1] == 'cor':
-        cor()
+        dict_cor = cor(1000)  
+        # print dict_cor.keys() 
+        dict_cor = sorted(dict_cor, key = lambda x: dict_cor[x][0], reverse = True)
+        print map(str, dict_cor[:10])
