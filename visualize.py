@@ -51,8 +51,8 @@ def cor(length = 0):
         # print j[0],c
     return d
 
-def fields_relation():
-    pass
+def fields_relation(top_features):
+    
 
 if __name__ == '__main__':
     train = pd.read_hdf('../kaggle_data/train.h5')
@@ -66,4 +66,5 @@ if __name__ == '__main__':
         dict_cor = cor(1000)  
         # print dict_cor.keys() 
         dict_cor = sorted(dict_cor, key = lambda x: dict_cor[x][0], reverse = True)
-        print map(str, dict_cor[:10])
+        top_features = map(str, dict_cor[:10])
+        print top_features
