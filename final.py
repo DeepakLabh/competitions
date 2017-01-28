@@ -24,7 +24,8 @@ min_y = min(train.y)
 # fields_all = train.keys()
 # fields_needed = list(filter(lambda x: isinstance(train[x][0], np.float32), fields_all))
 # fields_needed = fields_needed[:5]
-fields_needed = ['fundamental_18', 'fundamental_2', 'fundamental_11', 'fundamental_16']
+fields_needed = ['fundamental_18', 'fundamental_2', 'fundamental_11', 'fundamental_16'] #top correlated
+fields_needed =["technical_20","technical_30","technical_21", "technical_2","technical_17","technical_19","technical_11","technical_12"]
 # fields_needed = ['fundamental_18', 'fundamental_2', 'fundamental_11', 'fundamental_16', 'fundamental_3', 'fundamental_9', 'technical_16', 'technical_19', 'fundamental_8', 'technical_25']
 # print (fields_needed,111111111111111111111111)
 
