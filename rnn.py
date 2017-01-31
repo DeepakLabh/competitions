@@ -50,23 +50,28 @@ x_train= df[fields_needed]
 print('x_train: ', x_train.shape)
 print('y_train: ', y_train.shape)
 
+def pearson_r(y_true, y_pred):
+    return (np.corrcoef(list(y_true), list(y_pred))[0, 1])
+
+
+
 
 def compile_model_2d(input_shape):
     input_1 = Input(shape = (input_shape))
     input_layer = [input_1]
-    model = Convolution2D(10,3,3, border_mode='same')(input_1)
-    model = MaxPooling2D((2,2), strides=(1,1), border_mode='same')(model)
-    model = Activation('relu')(model)
+    # model = Convolution2D(10,3,3, border_mode='same')(input_1)
+    # model = MaxPooling2D((2,2), strides=(1,1), border_mode='same')(model)
+    # model = Activation('relu')(model)
 
-    model = Reshape((10,10))(model)
+    # model = Reshape((10,10))(model)
 
     model_f = LSTM(32, return_sequences=False, go_backwards = False, activation='tanh', inner_activation='hard_sigmoid')
     model_b = LSTM(32, return_sequences=False, go_backwards = True, activation='tanh', inner_activation='hard_sigmoid')
 
-    model_f = model_f(model)
+    model_f = model_f(input_1)
     model_f = Activation('relu')(model_f)
 
-    model_b = model_b(model)
+    model_b = model_b(input_1)
     model_b = Activation('relu')(model_b)
 
     model_merge = merge([model_f, model_b], mode='concat', concat_axis=-1)
@@ -77,7 +82,7 @@ def compile_model_2d(input_shape):
     out_layer = Activation('linear')(model_merge)
     model_final = Model(input=input_layer, output=out_layer)
     rms_prop = RMSprop(lr=0.001, rho=0.9, epsilon=1e-08, decay=0.0)
-    model_final.compile(loss='mean_squared_error', optimizer=rms_prop, metrics=['mae'])
+    model_final.compile(loss='mean_squared_error', optimizer=rms_prop, metrics=['pearson_r'])
     return model_final
 
 
@@ -92,8 +97,8 @@ def batch_gen_2d(batch_size):
         x_batch = ([x_train[k-9:k+1] for k in range(i, i+batch_size)])
         # x_batch = ([[x_train[k-j:k+1] for j in range(10,0,-1)] for k in range(i, i+batch_size-1)])
         # print (len(x_batch), len(x_batch[0]), len(x_batch[2])),3333333333333333
-        x_batch = map(lambda x: np.reshape(np.array(x), (1, 10, x_train.shape[1])),x_batch)
-        # print x_batch.shape,4444444444444444
+        x_batch = map(lambda x: np.reshape(np.array(x), (10, x_train.shape[1])),x_batch)
+        # print np.array([x_batch[0],x_batch[1]]).shape,4444444444444444
         x_batch = np.array(x_batch)
 
         yield x_batch, y_batch
@@ -101,7 +106,7 @@ def batch_gen_2d(batch_size):
 
 # input_shape = x_train.shape[1]
 batch_size = 500
-input_shape = (1,10,x_train.shape[1])
+input_shape = (10,x_train.shape[1])
 print("initializing model...")
 model = compile_model_2d(input_shape)
 print("fitting model...")
