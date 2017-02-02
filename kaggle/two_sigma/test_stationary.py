@@ -1,4 +1,7 @@
 from statsmodels.tsa.stattools import adfuller
+import pandas as pd
+import matplotlib.pyplot as plt
+
 def test_stationarity(timeseries):
 
     #Determing rolling statistics
