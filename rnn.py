@@ -69,20 +69,20 @@ def compile_model_2d(input_shape):
     model_b = LSTM(32, return_sequences=False, go_backwards = True, activation='tanh', inner_activation='hard_sigmoid')
 
     model_f = model_f(input_1)
-    model_f = Activation('relu')(model_f)
+    # model_f = Activation('relu')(model_f)
 
-    model_b = model_b(input_1)
-    model_b = Activation('relu')(model_b)
+    # model_b = model_b(input_1)
+    # model_b = Activation('relu')(model_b)
 
-    model_merge = merge([model_f, model_b], mode='concat', concat_axis=-1)
+    # model = merge([model_f, model_b], mode='concat', concat_axis=-1)
 
-    model_merge = Dense(64)(model_merge)
-    # model_merge = Dense(16)(model_merge)
-    model_merge = Dense(1)(model_merge)
-    out_layer = Activation('linear')(model_merge)
+    model = Dense(64)(model_f)
+    # model = Dense(16)(model)
+    model = Dense(1)(model)
+    out_layer = Activation('linear')(model)
     model_final = Model(input=input_layer, output=out_layer)
     rms_prop = RMSprop(lr=0.001, rho=0.9, epsilon=1e-08, decay=0.0)
-    model_final.compile(loss='mean_squared_error', optimizer=rms_prop, metrics=['pearson_r'])
+    model_final.compile(loss='mean_squared_error', optimizer=rms_prop, metrics=['mae'])
     return model_final
 
 
