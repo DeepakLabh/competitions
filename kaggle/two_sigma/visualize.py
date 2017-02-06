@@ -51,8 +51,39 @@ def cor(length = 0):
         # print j[0],c
     return d
 
-def fields_relation(top_features):
-    
+def fields_relation(features, length):
+    for i in features:
+        data = train[i]
+        data_1 = data-data.shift(1)
+        data_100 = data-data.shift(100)
+        data__1 = data_1-data_1.shift(1)
+        data__100 = data_100-data_100.shift(100)
+
+        p = plt.subplot(5,1,1)
+        p.set_title(i)
+        p.plot(data[200:length])
+
+        ########################  single diff ###############
+        p = plt.subplot(5,1,2)
+        p.set_title(i+ ':-diff 1')
+        p.plot(data_1[200:length])
+
+        p = plt.subplot(5,1,3)
+        p.set_title(i+ ':-diff 100')
+        p.plot(data_100[200:length])
+        ########################  double diff ###############
+
+        p = plt.subplot(5,1,4)
+        p.set_title(i+ ':-double diff 1')
+        p.plot(data__1[200:length])
+
+        p = plt.subplot(5,1,5)
+        p.set_title(i+ ':-double diff 100')
+        p.plot(data__100[200:length])
+
+        plt.savefig(i+features)
+        plt.clf()
+
 
 if __name__ == '__main__':
     train = pd.read_hdf('../kaggle_data/train.h5')
@@ -68,3 +99,6 @@ if __name__ == '__main__':
         dict_cor = sorted(dict_cor, key = lambda x: dict_cor[x][0], reverse = True)
         top_features = map(str, dict_cor[:10])
         print top_features
+    if sys.argv[-1] == 'stats':
+        features = ["technical_20","technical_30", 'y']
+        fields_relation(features, 1000)
