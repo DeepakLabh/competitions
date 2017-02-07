@@ -54,34 +54,37 @@ def cor(length = 0):
 def fields_relation(features, length):
     for i in features:
         data = train[i]
-        data_1 = data-data.shift(1)
-        data_100 = data-data.shift(100)
-        data__1 = data_1-data_1.shift(1)
-        data__100 = data_100-data_100.shift(100)
 
-        p = plt.subplot(5,1,1)
-        p.set_title(i)
+        p = plt.subplot(3,1,1)
+        p.set_title(i, fontsize=1)
         p.plot(data[200:length])
 
         ########################  single diff ###############
-        p = plt.subplot(5,1,2)
-        p.set_title(i+ ':-diff 1')
+        data_1 = data-data.shift(1)
+        data_100 = data-data.shift(100)
+        p = plt.subplot(3,1,2)
+        p.set_title(i+ ':-diff 1', fontsize=1)
         p.plot(data_1[200:length])
 
-        p = plt.subplot(5,1,3)
-        p.set_title(i+ ':-diff 100')
-        p.plot(data_100[200:length])
+        # p = plt.subplot(5,1,3)
+        # p.set_title(i+ ':-diff 100')
+        # p.plot(data_100[200:length])
+        ########################  single diff ###############
         ########################  double diff ###############
+        data__1 = data_1-data_1.shift(1)
+        data__100 = data_100-data_100.shift(100)
 
-        p = plt.subplot(5,1,4)
-        p.set_title(i+ ':-double diff 1')
+        p = plt.subplot(3,1,3)
+        p.set_title(i+ ':-double diff 1', fontsize=1)
         p.plot(data__1[200:length])
 
-        p = plt.subplot(5,1,5)
-        p.set_title(i+ ':-double diff 100')
-        p.plot(data__100[200:length])
+        # p = plt.subplot(5,1,5)
+        # p.set_title(i+ ':-double diff 100')
+        # p.plot(data__100[200:length])
+        ########################  double diff ###############
+        # plt.legend(fontsize=5)
 
-        plt.savefig(i+features)
+        plt.savefig(i+'STATIONARIZE')
         plt.clf()
 
 
@@ -101,4 +104,4 @@ if __name__ == '__main__':
         print top_features
     if sys.argv[-1] == 'stats':
         features = ["technical_20","technical_30", 'y']
-        fields_relation(features, 1000)
+        fields_relation(features, 300)
