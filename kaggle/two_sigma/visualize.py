@@ -103,5 +103,5 @@ if __name__ == '__main__':
         top_features = map(str, dict_cor[:10])
         print top_features
     if sys.argv[-1] == 'stats':
-        features = ["technical_20","technical_30", 'y']
+        features = train.keys()
         fields_relation(features, 300)
