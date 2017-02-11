@@ -84,7 +84,7 @@ def fields_relation(features, length):
         ########################  double diff ###############
         # plt.legend(fontsize=5)
 
-        plt.savefig(i+'STATIONARIZE')
+        plt.savefig('stats_plots/'+i+'STATIONARIZE')
         plt.clf()
 
 
