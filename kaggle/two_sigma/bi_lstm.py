@@ -32,6 +32,8 @@ print ('Keras version: ', keras.__version__)
 ############################################################
 
 train = pd.read_hdf('../kaggle_data/train.h5')
+train['rolling_mean_t_20'] = train.technical_20 - train.technical_20.shift(1)
+train['rolling_mean_t_30'] = train.technical_30 - train.technical_30.shift(1)
 # train = observation.train
 
 train_avg = train.y.mean()
@@ -48,7 +50,7 @@ min_y = min(train.y)
 # fields_needed = list(filter(lambda x: isinstance(train[x][0], np.float32), fields_all))
 # fields_needed = fields_needed[:5]
 fields_needed = ['fundamental_18', 'fundamental_2', 'fundamental_11', 'fundamental_16'] #top correlated
-fields_needed =["technical_20","technical_30", "technical_19","timestamp"]
+fields_needed =["rolling_mean_t_20", "rolling_mean_t_30","timestamp"]
 # fields_needed = ['fundamental_18', 'fundamental_2', 'fundamental_11', 'fundamental_16', 'fundamental_3', 'fundamental_9', 'technical_16', 'technical_19', 'fundamental_8', 'technical_25']
 # print (fields_needed,111111111111111111111111)
 
@@ -162,7 +164,7 @@ fit = model.fit_generator(generator=batch_gen_2d(500), nb_epoch=30, validation_d
 #     observation, reward, done, info = env.step(target)
 #     if timestamp%100 == 0:
 #         print("Timestamp #{}".format(timestamp), reward)
-#         print(strftime("%Y-%m-%d %H:%M:%S", gmtime()))
+#         #print(strftime("%Y-%m-%d %H:%M:%S", gmtime()))
 #         print(target.y.head())
 #     if done:
 #         print ('finished ###')
