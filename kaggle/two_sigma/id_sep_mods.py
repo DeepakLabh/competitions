@@ -36,11 +36,13 @@ def essentials():
 	least_id = ids_sorted[-1]
 	model_dict = {}
 
-	train_mean = train.mean(axis = 0)
 	important_features = ['technical_20', 'technical_30']
-	train.fillna(train_mean, inplace=True)
+	data = train[important_features]
+	data_mean = data.mean(axis = 0)
+	data.fillna(data_mean, inplace=True)
+
 	for i in important_features:
-		train[i+'diff'] = train[i] - train[i].shift(1)
+		data[i+'diff'] = data[i] - data[i].shift(1)
 		important_features.append(i+'diff')
 	
 # cols_train = ['technical_20', 'technical_30', ]
