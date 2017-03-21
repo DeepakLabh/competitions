@@ -16,13 +16,31 @@
 #include <string.h>
 #include <math.h>
 #include <stdlib.h> // mac os x
+#include <iostream>
+#include <jsoncpp/json/json.h>
+#include<jsoncpp/json/writer.h>
 
+using namespace std;
 
 const long long max_size = 2000;         // max length of strings
 const long long N = 40;                  // number of closest words that will be shown
 const long long max_w = 50;              // max length of vocabulary entries
 
 int main(int argc, char **argv) {
+//////////////////JSON WRITE CHECK//////////////////////////////////////////////////////
+//    Json::Value event;   
+//    Json::Value vec1(Json::arrayValue);
+//    vec1.append(Json::Value(1));
+//    vec1.append(Json::Value(2));
+//    vec1.append(Json::Value(3));
+//
+//    event["competitors"]["home"]["name"] = "Liverpool";
+//    event["competitors"]["away"]["code"] = 89223;
+//    event["competitors"]["away"]["name"] = "Aston Villa";
+//    event["competitors"]["away"]["code"]=vec1;
+//
+//    std::cout << event << std::endl;
+//////////////////JSON WRITE CHECK//////////////////////////////////////////////////////
   FILE *f;
   char st1[max_size];
   char bestw[N][max_size];
@@ -93,6 +111,8 @@ int main(int argc, char **argv) {
       for (b = 0; b < words; b++) if (!strcmp(&vocab[b * max_w], st[a])) break;
       if (b == words) b = -1;
       bi[a] = b;
+      //printf("---%lli ---%lli----%lli---%s", words, a, b, vocab);
+      cout<<"djhbfvjs"<<vocab<<a<<"\t"<<b<<"\t"<<st<<cn<<"\t"<<&vocab[b * max_w]<<endl<<"TESTINGGGGGGGGGGG";
       printf("\nWord: %s  Position in vocabulary: %lld\n", st[a], bi[a]);
       if (b == -1) {
         printf("Out of dictionary word!\n");
@@ -118,6 +138,7 @@ int main(int argc, char **argv) {
       if (a == 1) continue;
       dist = 0;
       for (a = 0; a < size; a++) dist += vec[a] * M[a + c * size];
+      cout<<vec[a]<<"TESTTTTTTTTTTTT\t"<<M[a+c*size]<<endl<<"TESTINGGGGGGGGGGGGGG";
       for (a = 0; a < N; a++) {
         if (dist > bestd[a]) {
           for (d = N - 1; d > a; d--) {
