@@ -19,6 +19,7 @@
 #include <iostream>
 #include <jsoncpp/json/json.h>
 #include<jsoncpp/json/writer.h>
+#include <fstream>
 
 using namespace std;
 
@@ -40,6 +41,13 @@ int main(int argc, char **argv) {
 //    event["competitors"]["away"]["code"]=vec1;
 //
 //    std::cout << event << std::endl;
+//////////////////////////////////////// write json ///////////////
+//    std::ofstream file_id;
+//    file_id.open("file.json");
+//    Json::StyledWriter styledWriter;
+//    file_id << styledWriter.write(event);
+//
+//    file_id.close();
 //////////////////JSON WRITE CHECK//////////////////////////////////////////////////////
   FILE *f;
   char st1[max_size];
@@ -68,6 +76,11 @@ int main(int argc, char **argv) {
     printf("Cannot allocate memory: %lld MB    %lld  %lld\n", (long long)words * size * sizeof(float) / 1048576, words, size);
     return -1;
   }
+//////////////////////  READ VECTOR FILE /////////////////////////////
+ Json::Value event;   
+ Json::Value vec1(Json::arrayValue);
+ std::ofstream outfile;
+ outfile.open("data.json", std::ios_base::app);
   for (b = 0; b < words; b++) {
     fscanf(f, "%s%c", &vocab[b * max_w], &ch);
     for (a = 0; a < size; a++) fread(&M[a + b * size], sizeof(float), 1, f);
@@ -75,8 +88,21 @@ int main(int argc, char **argv) {
     for (a = 0; a < size; a++) len += M[a + b * size] * M[a + b * size];
     len = sqrt(len);
     for (a = 0; a < size; a++) M[a + b * size] /= len;
+    
+   ///////////////// write vectors in json ///////////////
+    for (a = 0; a < size; a++); {
+     vec1.append(Json::Value(M[a + b * size]));
+   ///////////////// write vectors in json ///////////////
+     //vec1.append(Json::Value(2));
+     //vec1.append(Json::Value(3));
+    }
+     outfile << vec1;
+    //event[&vocab[b * max_w]] = vec1;
+   ///////////////// write vectors in json ///////////////
   }
   fclose(f);
+//////////////////////  READ VECTOR FILE /////////////////////////////
+
   while (1) {
     for (a = 0; a < N; a++) bestd[a] = 0;
     for (a = 0; a < N; a++) bestw[a][0] = 0;
@@ -112,7 +138,7 @@ int main(int argc, char **argv) {
       if (b == words) b = -1;
       bi[a] = b;
       //printf("---%lli ---%lli----%lli---%s", words, a, b, vocab);
-      cout<<"djhbfvjs"<<vocab<<a<<"\t"<<b<<"\t"<<st<<cn<<"\t"<<&vocab[b * max_w]<<endl<<"TESTINGGGGGGGGGGG";
+      cout<<"djhbfvjs"<<vocab<<"\t"<<a<<"\t"<<b<<"\t"<<st[a]<<"\t"<<"\t"<<cn<<"\t"<<&vocab[b * max_w]<<"\t"<<&vocab[(b+2) * max_w]<<endl<<"TESTINGGGGGGGGGGG";
       printf("\nWord: %s  Position in vocabulary: %lld\n", st[a], bi[a]);
       if (b == -1) {
         printf("Out of dictionary word!\n");
@@ -138,7 +164,8 @@ int main(int argc, char **argv) {
       if (a == 1) continue;
       dist = 0;
       for (a = 0; a < size; a++) dist += vec[a] * M[a + c * size];
-      cout<<vec[a]<<"TESTTTTTTTTTTTT\t"<<M[a+c*size]<<endl<<"TESTINGGGGGGGGGGGGGG";
+      //cout<<vec[a]<<"TESTTTTTTTTTTTT\t"<<M[a+c*size]<<endl<<"TESTINGGGGGGGGGGGGGG";
+      //cout<<&vocab[(c+3)*max_w]<<endl;////////////////////////////
       for (a = 0; a < N; a++) {
         if (dist > bestd[a]) {
           for (d = N - 1; d > a; d--) {
