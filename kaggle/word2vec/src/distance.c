@@ -78,17 +78,17 @@ int main(int argc, char **argv) {
   }
 //////////////////////  READ VECTOR FILE /////////////////////////////
  Json::Value event;   
- Json::Value vec1(Json::arrayValue);
  std::ofstream outfile;
  outfile.open("data.json", std::ios_base::app);
   for (b = 0; b < words; b++) {
+    Json::Value vec1(Json::arrayValue);
     fscanf(f, "%s%c", &vocab[b * max_w], &ch);
     for (a = 0; a < size; a++) fread(&M[a + b * size], sizeof(float), 1, f);
     len = 0;
     for (a = 0; a < size; a++) len += M[a + b * size] * M[a + b * size];
     len = sqrt(len);
     for (a = 0; a < size; a++) M[a + b * size] /= len;
-    
+    //cout<< M[a + b * size] <<"sdssssssssssssssssssssssss"<< endl;
    ///////////////// write vectors in json ///////////////
     for (a = 0; a < size; a++); {
      vec1.append(Json::Value(M[a + b * size]));
@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
       dist = 0;
       for (a = 0; a < size; a++) dist += vec[a] * M[a + c * size];
       //cout<<vec[a]<<"TESTTTTTTTTTTTT\t"<<M[a+c*size]<<endl<<"TESTINGGGGGGGGGGGGGG";
-      //cout<<&vocab[(c+3)*max_w]<<endl;////////////////////////////
+      //cout<<&vocab[c*max_w]<<endl;////////////////////////////
       for (a = 0; a < N; a++) {
         if (dist > bestd[a]) {
           for (d = N - 1; d > a; d--) {
@@ -179,6 +179,20 @@ int main(int argc, char **argv) {
       }
     }
     for (a = 0; a < N; a++) printf("%50s\t\t%f\n", bestw[a], bestd[a]);
+
+    ////////////////////////////////////////
+    for (c = 0; c < words; c++){
+      Json::Value vec1(Json::arrayValue);
+      Json::Value event;
+      for (a = 0; a < size; a++); {
+        vec1.append(Json::Value(M[a + b * size]));
+	cout<< M[a + b * size]<< endl;
+       }
+	event[&vocab[c * max_w]] = vec1;
+        outfile << event;
+     if (c==2) break;
+   }
+    ////////////////////////////////////////
   }
   return 0;
 }
