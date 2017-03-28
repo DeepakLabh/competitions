@@ -29,7 +29,7 @@ def create_trainable_for_vector(filenames):
         fields = ['question1', 'question2']
         data_q = data[fields]
 	data_q_array = np.array(data_q).flatten()
-	data_q_array = map(lambda x: re.sub(r'\W*$',' ',x) if isinstance(x, str) else '', data_q_array)
+	data_q_array = map(lambda x: re.sub(r'\W+',' ',x) if isinstance(x, str) else '', data_q_array)
 	data_all += data_q_array
     data = ' '.join(data_all).lower()
     return data
