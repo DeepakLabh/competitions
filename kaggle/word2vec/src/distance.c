@@ -79,7 +79,8 @@ int main(int argc, char **argv) {
 //////////////////////  READ VECTOR FILE /////////////////////////////
  Json::Value event;   
  std::ofstream outfile;
- outfile.open("data.json", std::ios_base::app);
+ //outfile.open("data.json", std::ios_base::app);
+ outfile.open("vocab.txt");
   for (b = 0; b < words; b++) {
     Json::Value vec1(Json::arrayValue);
     fscanf(f, "%s%c", &vocab[b * max_w], &ch);
@@ -138,7 +139,7 @@ int main(int argc, char **argv) {
       if (b == words) b = -1;
       bi[a] = b;
       //printf("---%lli ---%lli----%lli---%s", words, a, b, vocab);
-      cout<<"djhbfvjs"<<vocab<<"\t"<<a<<"\t"<<b<<"\t"<<st[a]<<"\t"<<"\t"<<cn<<"\t"<<&vocab[b * max_w]<<"\t"<<&vocab[(b+2) * max_w]<<endl<<"TESTINGGGGGGGGGGG";
+      //cout<<"djhbfvjs"<<vocab<<"\t"<<a<<"\t"<<b<<"\t"<<st[a]<<"\t"<<"\t"<<cn<<"\t"<<&vocab[b * max_w]<<"\t"<<&vocab[(b+2) * max_w]<<endl<<"TESTINGGGGGGGGGGG";
       printf("\nWord: %s  Position in vocabulary: %lld\n", st[a], bi[a]);
       if (b == -1) {
         printf("Out of dictionary word!\n");
@@ -165,7 +166,8 @@ int main(int argc, char **argv) {
       dist = 0;
       for (a = 0; a < size; a++) dist += vec[a] * M[a + c * size];
       //cout<<vec[a]<<"TESTTTTTTTTTTTT\t"<<M[a+c*size]<<endl<<"TESTINGGGGGGGGGGGGGG";
-      //cout<<&vocab[c*max_w]<<endl;////////////////////////////
+      //cout<<&vocab[c*max_w]<<"     shbdcjsbcsbcjdbcjsbcjsbcjsdbc"<<endl;////////////////////////////
+      outfile<<&vocab[c*max_w]<<endl;
       for (a = 0; a < N; a++) {
         if (dist > bestd[a]) {
           for (d = N - 1; d > a; d--) {
@@ -180,18 +182,18 @@ int main(int argc, char **argv) {
     }
     for (a = 0; a < N; a++) printf("%50s\t\t%f\n", bestw[a], bestd[a]);
 
-    ////////////////////////////////////////
-    for (c = 0; c < words; c++){
-      Json::Value vec1(Json::arrayValue);
-      Json::Value event;
-      for (a = 0; a < size; a++); {
-        vec1.append(Json::Value(M[a + b * size]));
-	cout<< M[a + b * size]<< endl;
-       }
-	event[&vocab[c * max_w]] = vec1;
-        outfile << event;
-     if (c==2) break;
-   }
+    ///////////// To write vectors in file///////////////////////////
+    //for (c = 0; c < words; c++){
+    //  Json::Value vec1(Json::arrayValue);
+    //  Json::Value event;
+    //  for (a = 0; a < size; a++); {
+    //    vec1.append(Json::Value(M[a + b * size]));
+    //    cout<< M[a + b * size]<< endl;
+    //   }
+    //    event[&vocab[c * max_w]] = vec1;
+    //    outfile << event;
+    // if (c==2) break;
+    // }
     ////////////////////////////////////////
   }
   return 0;
