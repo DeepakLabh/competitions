@@ -1,3 +1,5 @@
+Forked from https://github.com/dav/word2vec
+
 word2vec
 ========
 
