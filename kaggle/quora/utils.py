@@ -39,7 +39,7 @@ def write_vectors(binary_file_path, vocab_file_path, client):
     vocab = json.load(open(vocab_file_path))
     for i in vocab:
         try:
-	    client.data.wordvec.insert({i: word_vectors[i].tolist()})
+	    client.data.wordvec.insert({'vec': word_vectors[i].tolist(), 'word':i})
 	except Exception as e:
 	    print e
 
