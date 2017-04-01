@@ -47,25 +47,27 @@ def index_training_data():
     #x1 = map(lambda x: map(lambda xx: coll_vec.find_one({'word':xx})['vec'] if coll_vec.find_one({'word':xx})!=None else np.zeros(wordvec_dim), x), x1)
     #x2 = map(lambda x: map(lambda xx: coll_vec.find_one({'word':xx})['vec'] if coll_vec.find_one({'word':xx})!=None else np.zeros(wordvec_dim), x), x2)
     x1_train = []
-    for i in xrange(len(x2)):
-        #print 'hello111111111',i
-        x1_sents = []
-        for j in xrange(max_sent_len):
-            try:
-                if j>=len(x1[i]):
-                    x1_sents.append(np.zeros(wordvec_dim))
-                else:
-                        #print 'hello1222222222222', j
-                    x1_sents.append(coll_vec.find_one({'word':x1[i][j]})['vec'])
-            except:
-                #if j>=len(x1[i]):
-                x1_sents.append(np.zeros(wordvec_dim))
-               # else:
-               #     x1[i][j] = np.zeros(wordvec_dim)
-        question1_collection.insert_one({'_id':i, 'vec':np.array(x1_sents).tolist()})
-        try: 1/(i%10000)
-        except: print i
+    #######################################3 For indexing question 1 ###################
+    #for i in xrange(len(x2)):
+    #    #print 'hello111111111',i
+    #    x1_sents = []
+    #    for j in xrange(max_sent_len):
+    #        try:
+    #            if j>=len(x1[i]):
+    #                x1_sents.append(np.zeros(wordvec_dim))
+    #            else:
+    #                x1_sents.append(coll_vec.find_one({'word':x1[i][j]})['vec'])
+    #        except:
+    #           #if j>=len(x1[i]):
+    #            x1_sents.append(np.zeros(wordvec_dim))
+    #           # else:
+    #           #     x1[i][j] = np.zeros(wordvec_dim)
+    #    question1_collection.insert_one({'_id':i, 'vec':np.array(x1_sents).tolist()})
+    #    try: 1/(i%10000)
+    #    except: print i
+    #######################################3 For indexing question 1 ###################
 
+    #######################################3 For indexing question 2 ###################
     for i in xrange(len(x2)):
         x2_sents = []
         for j in xrange(max_sent_len):
@@ -75,13 +77,14 @@ def index_training_data():
                 else:
                     x2_sents.append(coll_vec.find_one({'word':x2[i][j]})['vec'])
             except:
-                if j>=len(x2[i]):
-                    x2_sents.append(np.zeros(wordvec_dim))
+                #if j>=len(x2[i]):
+                x2_sents.append(np.zeros(wordvec_dim))
                 #else:
                 #    x2[i][j] = np.zeros(wordvec_dim)
         question2_collection.insert_one({'_id':i, 'vec':np.array(x2_sents).tolist()})
         try: 1/(i%10000)
         except: print i
+    #######################################3 For indexing question 2 ###################
 
 
 if __name__ == '__main__':
