@@ -33,6 +33,25 @@ def create_trainable_for_vector(filenames):
 	data_all += data_q_array
     data = ' '.join(data_all).lower()
     return data
+def generate_vectors(word_vectors, word, text_file_path):
+    count = 0
+    a = open(text_file_path).read()
+    vec = np.zeros(wordvec_dim)
+    try:
+	nearby_words = filter(lambda x: word in x, re.split(r'\s{2,}',a[a.index(word)-100:a.index(word)+100]))[0].split() 
+	for i in nearby_words:
+	    try:
+		vec += word_vectors[i]
+		count+=1
+	    except:
+		pass
+	vec = vec/count
+    except Exception as e:
+	print 'cannot synthesize new vectors ',e
+	vec = np.zeros(wordvec_dim)
+    return vec
+	
+
 
 def write_vectors(binary_file_path, vocab_file_path, client):
     word_vectors = KeyedVectors.load_word2vec_format(binary_file_path, binary=True)  # C binary format
@@ -41,34 +60,37 @@ def write_vectors(binary_file_path, vocab_file_path, client):
         try:
 	    client.data.wordvec.insert({'vec': word_vectors[i].tolist(), 'word':i})
 	except Exception as e:
+	    client.data.wordvec.insert({'vec': generate_vectors(word_vectors, i, '../quora_data/vec_train.txt').tolist(), 'word':i})
 	    print e
+
 def index_training_data():
     print 'create trainable data'
     #x1 = map(lambda x: map(lambda xx: coll_vec.find_one({'word':xx})['vec'] if coll_vec.find_one({'word':xx})!=None else np.zeros(wordvec_dim), x), x1)
     #x2 = map(lambda x: map(lambda xx: coll_vec.find_one({'word':xx})['vec'] if coll_vec.find_one({'word':xx})!=None else np.zeros(wordvec_dim), x), x2)
     x1_train = []
     #######################################3 For indexing question 1 ###################
-    #for i in xrange(len(x2)):
-    #    #print 'hello111111111',i
-    #    x1_sents = []
-    #    for j in xrange(max_sent_len):
-    #        try:
-    #            if j>=len(x1[i]):
-    #                x1_sents.append(np.zeros(wordvec_dim))
-    #            else:
-    #                x1_sents.append(coll_vec.find_one({'word':x1[i][j]})['vec'])
-    #        except:
-    #           #if j>=len(x1[i]):
-    #            x1_sents.append(np.zeros(wordvec_dim))
-    #           # else:
-    #           #     x1[i][j] = np.zeros(wordvec_dim)
-    #    question1_collection.insert_one({'_id':i, 'vec':np.array(x1_sents).tolist()})
-    #    try: 1/(i%10000)
-    #    except: print i
+    for i in xrange(50000):
+
+        #print 'hello111111111',i
+        x1_sents = []
+        for j in xrange(max_sent_len):
+            try:
+                if j>=len(x1[i]):
+                    x1_sents.append(np.zeros(wordvec_dim))
+                else:
+                    x1_sents.append(coll_vec.find_one({'word':x1[i][j]})['vec'])
+            except:
+               #if j>=len(x1[i]):
+                x1_sents.append(np.zeros(wordvec_dim))
+               # else:
+               #     x1[i][j] = np.zeros(wordvec_dim)
+        question1_collection.insert_one({'_id':i, 'vec':np.array(x1_sents).tolist()})
+        try: 1/(i%10000)
+        except: print i
     #######################################3 For indexing question 1 ###################
 
     #######################################3 For indexing question 2 ###################
-    for i in xrange(len(x2)):
+    for i in xrange(50000):
         x2_sents = []
         for j in xrange(max_sent_len):
             try:
@@ -89,6 +111,7 @@ def index_training_data():
 
 if __name__ == '__main__':
     client = MongoClient()
+    wordvec_dim = 200
     if sys.argv[-1] == 'create_vocab':
         d1= create_vocab('../quora_data/train.csv')
         d2= create_vocab('../quora_data/test.csv')
@@ -107,7 +130,6 @@ if __name__ == '__main__':
         coll_vec = c.data.wordvec
         question1_collection = c.data.question1
         question2_collection = c.data.question2
-        wordvec_dim = 200
         data = pd.read_csv('../quora_data/train.csv')
         y = data['is_duplicate']
         x1 = data['question1']
