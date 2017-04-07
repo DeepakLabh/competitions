@@ -63,6 +63,18 @@ def write_vectors(binary_file_path, vocab_file_path, client):
 	    client.data.wordvec.insert({'vec': generate_vectors(word_vectors, i, '../quora_data/vec_train.txt').tolist(), 'word':i})
 	    print e
 
+def predict_similarity(question1, question2, vec_coll, model):
+    print question1, question2
+    q = map(lambda x: re.sub(r'\W+',' ',x.lower()) if isinstance(x, str) else '', [question1, question2])
+    q_vec = map(lambda x: map(lambda xx:np.array(vec_coll.find_one({'word': xx})['vec']) if vec_coll.find_one({'word': xx}) else np.zeros(wordvec_dim), x), q)
+    #print q_vec.shape,11111111
+    q_vec = map(lambda x: x[:max_sent_len] if len(x) > max_sent_len else np.concatenate((x,np.zeros((max_sent_len-len(x), wordvec_dim))), axis = 0), q_vec)
+    #print q_vec.shape,2222222
+    q_vec = map(lambda x: np.array(x).reshape((1, max_sent_len, wordvec_dim)), q_vec)
+    print q_vec
+    out = model.predict(q_vec)
+    return out
+
 def index_training_data():
     print 'create trainable data'
     #x1 = map(lambda x: map(lambda xx: coll_vec.find_one({'word':xx})['vec'] if coll_vec.find_one({'word':xx})!=None else np.zeros(wordvec_dim), x), x1)
@@ -110,8 +122,14 @@ def index_training_data():
 
 
 if __name__ == '__main__':
-    client = MongoClient()
+    c = MongoClient()
+    coll_vec = c.data.wordvec
+    question1_collection = c.data.question1
+    question2_collection = c.data.question2
     wordvec_dim = 200
+    max_sent_len = 10
+    gru_output_dim = 50
+    output_dim = 2
     if sys.argv[-1] == 'create_vocab':
         d1= create_vocab('../quora_data/train.csv')
         d2= create_vocab('../quora_data/test.csv')
@@ -126,10 +144,6 @@ if __name__ == '__main__':
         import numpy as np
         import re
         
-        c = MongoClient()
-        coll_vec = c.data.wordvec
-        question1_collection = c.data.question1
-        question2_collection = c.data.question2
         data = pd.read_csv('../quora_data/train.csv')
         y = data['is_duplicate']
         x1 = data['question1']
@@ -143,3 +157,11 @@ if __name__ == '__main__':
         max_sent_len = 60
 
         index_training_data()
+
+    if sys.argv[-1] == 'predict':
+	import model_arch as ma
+	q1,q2 = sys.argv[-3], sys.argv[-2]
+	model = ma.dense_test(max_sent_len, wordvec_dim, gru_output_dim, output_dim)
+	model.load_weights('../quora_data/siamese_lstm.weights')
+	out = predict_similarity(q1, q2, coll_vec, model)
+	print out,'  <<-------- OUTPUT'

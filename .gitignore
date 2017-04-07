@@ -1,8 +1,10 @@
-*.png
 *.pyc
 *.bkp
 screenlog*
 *.swp
 *.swo
+*.swm
+*.swn
 no*
 *data*
+*json*
