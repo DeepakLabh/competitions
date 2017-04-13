@@ -130,15 +130,15 @@ if __name__ == '__main__':
     max_sent_len = 10
     gru_output_dim = 50
     output_dim = 2
-    if sys.argv[-1] == 'create_vocab':
+    if sys.argv[-1] == 'create_vocab': ### Create vocab of both train and test data
         d1= create_vocab('../quora_data/train.csv')
         d2= create_vocab('../quora_data/test.csv')
         d = list(set(d1+d2))
         json.dump(d, open('../quora_data/vocab.json','w'))
-    if sys.argv[-1] == 'index_vectors':
+    if sys.argv[-1] == 'index_vectors': ### Write word vectors into mongodb
         write_vectors('../quora_data/quora-vector.bin', '../quora_data/vocab.json', client)
 
-    if sys.argv[-1]=='index_train':
+    if sys.argv[-1]=='index_train':### Create training data and index in mongodb
         import pandas as pd
         from pymongo import MongoClient
         import numpy as np
@@ -158,7 +158,7 @@ if __name__ == '__main__':
 
         index_training_data()
 
-    if sys.argv[-1] == 'predict':
+    if sys.argv[-1] == 'predict': ### Sample prediction
 	import model_arch as ma
 	q1,q2 = sys.argv[-3], sys.argv[-2]
 	model = ma.dense_test(max_sent_len, wordvec_dim, gru_output_dim, output_dim)
