@@ -29,7 +29,7 @@ def create_trainable_for_vector(filenames):
         fields = ['question1', 'question2']
         data_q = data[fields]
 	data_q_array = np.array(data_q).flatten()
-	data_q_array = map(lambda x: re.sub(r'\W+',' ',x) if isinstance(x, str) else '', data_q_array)
+	data_q_array = map(lambda x: re.sub(r'\W+',' ',x)+'. ' if isinstance(x, str) else '', data_q_array)
 	data_all += data_q_array
     data = ' '.join(data_all).lower()
     return data
@@ -53,14 +53,14 @@ def generate_vectors(word_vectors, word, text_file_path):
 	
 
 
-def write_vectors(binary_file_path, vocab_file_path, client):
+def write_vectors(binary_file_path, vocab_file_path, c):
     word_vectors = KeyedVectors.load_word2vec_format(binary_file_path, binary=True)  # C binary format
     vocab = json.load(open(vocab_file_path))
     for i in vocab:
         try:
-	    client.data.wordvec.insert({'vec': word_vectors[i].tolist(), 'word':i})
+	    c.data.wordvec.insert({'vec': word_vectors[i].tolist(), 'word':i})
 	except Exception as e:
-	    client.data.wordvec.insert({'vec': generate_vectors(word_vectors, i, '../quora_data/vec_train.txt').tolist(), 'word':i})
+	    c.data.wordvec.insert({'vec': generate_vectors(word_vectors, i, '../quora_data/vec_train.txt').tolist(), 'word':i})
 	    print e
 
 def predict_similarity(question1, question2, vec_coll, model):
@@ -136,7 +136,7 @@ if __name__ == '__main__':
         d = list(set(d1+d2))
         json.dump(d, open('../quora_data/vocab.json','w'))
     if sys.argv[-1] == 'index_vectors': ### Write word vectors into mongodb
-        write_vectors('../quora_data/quora-vector.bin', '../quora_data/vocab.json', client)
+        write_vectors('../quora_data/quora-vector.bin', '../quora_data/vocab.json', c)
 
     if sys.argv[-1]=='index_train':### Create training data and index in mongodb
         import pandas as pd
@@ -165,3 +165,7 @@ if __name__ == '__main__':
 	model.load_weights('../quora_data/siamese_lstm.weights')
 	out = predict_similarity(q1, q2, coll_vec, model)
 	print out,'  <<-------- OUTPUT'
+    
+    if sys.argv[-1] == 'create_vec_data': ### Create trainables for vector
+	data = create_trainable_for_vector(['../quora_data/train.csv', '../quora_data/test.csv'])
+	open('../quora_data/vec_train.txt', 'w').write(data)
