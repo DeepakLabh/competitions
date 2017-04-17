@@ -47,14 +47,14 @@ def siamese(max_sent_len, wordvec_dim,gru_output_dim, output_dim):
 
     model = merge(siamese_sub_parts, mode = 'concat', concat_axis = -1)
     model = Dense(output_dim)(model)
-    
+
     sgd = optimizers.SGD(lr=0.001, decay=1e-6, momentum=0.9, nesterov=True)
     #model = BatchNormalization()(model)
     out_layer = Activation('softmax')(model)
     model = Model(input = input_layers, output = out_layer)
-    
+
     model.compile(loss = 'categorical_crossentropy', optimizer='adagrad', metrics = ['accuracy'])
-    
+
     return model
 
 def dense_test(max_sent_len, wordvec_dim,gru_output_dim, output_dim):
@@ -70,3 +70,6 @@ def dense_test(max_sent_len, wordvec_dim,gru_output_dim, output_dim):
     model = Model(input = input_layers, output = out_layer)
     model.compile(loss = 'categorical_crossentropy', optimizer='adagrad', metrics = ['accuracy'])
     return model
+
+#def siamese_tfidf(max_sent_len, wordvec_dim, gru_output_dim, output_dim):
+

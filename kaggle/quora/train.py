@@ -4,6 +4,7 @@ from keras.utils import plot_model
 from pymongo import MongoClient
 import numpy as np
 import model_arch as ma
+import sys
 import re
 from random import randint
 import matplotlib.pyplot as plt
@@ -20,10 +21,10 @@ max_sent_len = 10
 wordvec_dim = 200
 gru_output_dim = 50
 output_dim = 2
-train_size = 500
-batch_size = 100
-num_epoch = 100
-def batch_gen_2d(batch_size, start_index, end_index):
+train_size = 2000
+batch_size = 500
+num_epoch = 20
+def batch_gen_2d(batch_size, start_index, end_index, only_tfidf = False):
     while True:
         i = randint(start_index, end_index)
         #i = randint(1, 1000)
@@ -36,21 +37,33 @@ def batch_gen_2d(batch_size, start_index, end_index):
         x_batch1_tf = map(lambda x: np.array(x['tf'][:max_sent_len] if len(x['tf'])>= max_sent_len else x['tf']+list(np.zeros(max_sent_len-len(x['tf'])))), list(question1_collection.find({'_id': {'$gte': i, '$lt': i+batch_size}})))
         #x_batch = map(lambda x: np.reshape(np.array(x), (input_shape[0], x_train.shape[1])),x_batch) # 10 is nu of recurrent layers
         ############ To normalize the inputs ############3
+
+        if only_tfidf:
+            x_batch1_tf = np.array(x_batch1_tf).reshape(batch_size, max_sent_len, 1)
+            x_batch2_tf = np.array(x_batch2_tf).reshape(batch_size, max_sent_len, 1)
+            yield [x_batch1_tf, x_batch2_tf], y_batch
+            continue
+
         x_batch1 = map(lambda x: map(lambda xx: abs(xx)-abs(x.mean()), x), x_batch1)
         x_batch2 = map(lambda x: map(lambda xx: abs(xx)-abs(x.mean()), x), x_batch2)
         ############ To normalize the inputs ############3
-        x_batch1 = np.array(list(x_batch1))*np.array(x_batch1_tf)
-        x_batch2 = np.array(list(x_batch2))*np.array(x_batch2_tf)
+        x_batch1, x_batch2 = [np.array(x_batch1), np.array(x_batch2)]
+        x_batch1 = np.array(map(lambda x,yy:np.multiply(x.transpose(),yy).transpose(), x_batch1, x_batch1_tf))
+        x_batch2 = np.array(map(lambda x,yy:np.multiply(x.transpose(),yy).transpose(), x_batch2, x_batch2_tf))
         #print y_batch,111111111111111
-        yield [x_batch1, x_batch2], y_batch
+        yield ([x_batch1, x_batch2], y_batch)
         # break
 
 
 model = ma.dense_test(max_sent_len, wordvec_dim, gru_output_dim, output_dim)
-print 'fitting model ...'
 
+print 'fitting model ...'
+only_tfidf = False
+if sys.argv[-1]=='only_tfidf':
+    model = ma.siamese(max_sent_len, 1 , gru_output_dim, output_dim)
+    only_tfidf = True
 #fit = model.fit_generator(generator=batch_gen_2d(500,1,10000), nb_epoch=30, samples_per_epoch=train_size)
-history = model.fit_generator(generator=batch_gen_2d(batch_size,1,1000), nb_epoch = num_epoch, validation_data = batch_gen_2d(batch_size,9000,9510), nb_val_samples = 100, steps_per_epoch=50)
+history = model.fit_generator(generator=batch_gen_2d(batch_size,1,3000, only_tfidf), nb_epoch = num_epoch, validation_data = batch_gen_2d(batch_size,5000,6010, only_tfidf), nb_val_samples = 100, steps_per_epoch=50)
 
 plot_model(model, to_file='model.png')
 
