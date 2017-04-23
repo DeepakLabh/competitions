@@ -1,6 +1,6 @@
 import pandas as pd
-from keras.utils import plot_model
-
+#from keras.utils import plot_model
+import matplotlib
 from pymongo import MongoClient
 import numpy as np
 import model_arch as ma
@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 #import pickle as pk
 #import gzip
 
+matplotlib.use('Agg')
 c = MongoClient()
 coll_vec = c.data.wordvec
 question1_collection = c.data.question1
@@ -21,9 +22,9 @@ max_sent_len = 10
 wordvec_dim = 200
 gru_output_dim = 50
 output_dim = 2
-train_size = 2000
-batch_size = 500
-num_epoch = 20
+train_size = 5000
+batch_size = 1000
+num_epoch = 200
 def batch_gen_2d(batch_size, start_index, end_index, only_tfidf = False):
     while True:
         i = randint(start_index, end_index)
@@ -55,7 +56,7 @@ def batch_gen_2d(batch_size, start_index, end_index, only_tfidf = False):
         # break
 
 
-model = ma.dense_test(max_sent_len, wordvec_dim, gru_output_dim, output_dim)
+model = ma.siamese(max_sent_len, wordvec_dim, gru_output_dim, output_dim)
 
 print 'fitting model ...'
 only_tfidf = False
@@ -63,9 +64,9 @@ if sys.argv[-1]=='only_tfidf':
     model = ma.siamese(max_sent_len, 1 , gru_output_dim, output_dim)
     only_tfidf = True
 #fit = model.fit_generator(generator=batch_gen_2d(500,1,10000), nb_epoch=30, samples_per_epoch=train_size)
-history = model.fit_generator(generator=batch_gen_2d(batch_size,1,3000, only_tfidf), nb_epoch = num_epoch, validation_data = batch_gen_2d(batch_size,5000,6010, only_tfidf), nb_val_samples = 100, steps_per_epoch=50)
+history = model.fit_generator(generator=batch_gen_2d(batch_size,1,39000, only_tfidf), nb_epoch = num_epoch, validation_data = batch_gen_2d(batch_size,44000,44010, only_tfidf), nb_val_samples = 1000, samples_per_epoch=train_size)
 
-plot_model(model, to_file='model.png')
+#plot_model(model, to_file='model.png')
 
 model.save_weights("../quora_data/siamese_lstm.weights",overwrite=True)
 

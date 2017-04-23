@@ -74,9 +74,14 @@ def write_vectors(binary_file_path, vocab_file_path, c):
 #	    c.data.wordvec.insert({'vec': generate_vectors(word_vectors, i, '../quora_data/vec_train.txt').tolist(), 'word':i})
 #	    print e
 
-def predict_similarity(question1, question2, vec_coll, model):
-    print question1, question2
+def predict_similarity(question1, question2, vec_coll, model, only_tfidf=False, batch_size = 1):
+    #print question1, question2
     q = map(lambda x: re.sub(r'\W+',' ',x.lower()) if isinstance(x, str) else '', [question1, question2])
+    if only_tfidf:
+        q_vec = map(lambda x: np.lib.pad(tf.vec(x)[:max_sent_len], (0,max(0,max_sent_len-len(tf.vec(x)))), 'constant', constant_values = (0)).reshape(1,max_sent_len,1), q)
+        return model.predict(q_vec)
+    if batch_size > 1:
+        pass
     q_vec = map(lambda x: map(lambda xx:np.array(vec_coll.find_one({'word': xx})['vec']) if vec_coll.find_one({'word': xx}) else np.zeros(wordvec_dim), x), q)
     q_vec = map(lambda x: x[:max_sent_len] if len(x) > max_sent_len else np.concatenate((x,np.zeros((max_sent_len-len(x), wordvec_dim))), axis = 0), q_vec)
     q_vec = map(lambda x: np.array(x).reshape((1, max_sent_len, wordvec_dim)), q_vec)
@@ -90,25 +95,25 @@ def index_training_data(num_data):
     #x2 = map(lambda x: map(lambda xx: coll_vec.find_one({'word':xx})['vec'] if coll_vec.find_one({'word':xx})!=None else np.zeros(wordvec_dim), x), x2)
     x1_train = []
     #######################################3 For indexing question 1 ###################
-    #for i in xrange(num_data):
-    #    x1_tfidf = tf.vec(' '.join(x1[i]))
-    #    #print 'hello111111111',i
-    #    x1_sents = []
-    #    for j in xrange(max_sent_len):
-    #        try:
-    #            if j>=len(x1[i]):
-    #                x1_sents.append(np.zeros(wordvec_dim))
-    #            else:
-    #                x1_sents.append(coll_vec.find_one({'word':x1[i][j]})['vec'])
+    for i in xrange(num_data):
+        x1_tfidf = tf.vec(' '.join(x1[i]))
+        #print 'hello111111111',i
+        x1_sents = []
+        for j in xrange(max_sent_len):
+            try:
+                if j>=len(x1[i]):
+                    x1_sents.append(np.zeros(wordvec_dim))
+                else:
+                    x1_sents.append(coll_vec.find_one({'word':x1[i][j]})['vec'])
 
-    #        except:
-    #           #if j>=len(x1[i]):
-    #            x1_sents.append(np.zeros(wordvec_dim))
-    #           # else:
-    #           #     x1[i][j] = np.zeros(wordvec_dim)
-    #    question1_collection.insert_one({'_id':i, 'vec':np.array(x1_sents).tolist(), 'tf':x1_tfidf})
-    #    try: 1/(i%10000)
-    #    except: print i
+            except:
+               #if j>=len(x1[i]):
+                x1_sents.append(np.zeros(wordvec_dim))
+               # else:
+               #     x1[i][j] = np.zeros(wordvec_dim)
+        question1_collection.insert_one({'_id':i, 'vec':np.array(x1_sents).tolist(), 'tf':x1_tfidf})
+        try: 1/(i%10000)
+        except: print i
     #######################################3 For indexing question 1 ###################
 
     #######################################3 For indexing question 2 ###################
@@ -134,6 +139,7 @@ def index_training_data(num_data):
 
 if __name__ == '__main__':
     c = MongoClient()
+    only_tfidf = True
     coll_vec = c.data.wordvec
     question1_collection = c.data.question1
     question2_collection = c.data.question2
@@ -173,16 +179,46 @@ if __name__ == '__main__':
         max_sent_len = max([max(map(lambda x: len(x), x1)), max(map(lambda x: len(x), x2))])
         max_sent_len = 60
 
-        index_training_data(10000)
+        index_training_data(50000)
 
     if sys.argv[-1] == 'predict': ### Sample prediction
 	import model_arch as ma
+        tf = tfidf.tfidf('../quora_data/vec_train.txt')
 	q1,q2 = sys.argv[-3], sys.argv[-2]
-	model = ma.dense_test(max_sent_len, wordvec_dim, gru_output_dim, output_dim)
+        if only_tfidf: wordvec_dim = 1
+	model = ma.siamese(max_sent_len, wordvec_dim, gru_output_dim, output_dim)
 	model.load_weights('../quora_data/siamese_lstm.weights')
-	out = predict_similarity(q1, q2, coll_vec, model)
+	out = predict_similarity(q1, q2, coll_vec, model, only_tfidf)
 	print out,'  <<-------- OUTPUT'
 
     if sys.argv[-1] == 'create_vec_data': ### Create trainables for vector
 	data = create_trainable_for_vector(['../quora_data/train.csv', '../quora_data/test.csv'])
 	open('../quora_data/vec_train.txt', 'w').write(data)
+
+    if sys.argv[-1] == 'sub': # for submission
+        test_data = pd.read_csv('../quora_data/test.csv')
+	import model_arch as ma
+        tf = tfidf.tfidf('../quora_data/vec_train.txt')
+	#q1,q2 = sys.argv[-3], sys.argv[-2]
+        if only_tfidf: wordvec_dim = 1
+	model = ma.siamese(max_sent_len, wordvec_dim, gru_output_dim, output_dim)
+	model.load_weights('../quora_data/siamese_lstm.weights')
+
+        df = pd.DataFrame(columns = ['test_id', 'is_duplicate'])
+        #for i in xrange(len(test_data['id'])):
+        i = 0
+        while i<len(test_data):
+            #batch_data = test_data[i:i+batch_size]
+            q1 = test_data['question1'][i]
+            q2 = test_data['question2'][i]
+	    out = predict_similarity(q1, q2, coll_vec, model, only_tfidf)
+            out = list(out[0])
+            out = out.index(min(out))
+            df1 = pd.DataFrame([[int(test_data['test_id'][i]), int(out)]], columns = ['test_id', 'is_duplicate'])
+            df = df.append(df1)
+            i=i+1
+            if i%1000==0 : print i, df1, q1, q2,111111111
+            #if i%10000==0: break
+
+        df = df.astype(int)
+        df.to_csv('../quora_data/Sample_submission_1.csv', index=False)
