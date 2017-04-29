@@ -172,8 +172,8 @@ if __name__ == '__main__':
         x1 = data['question1']
         x2 = data['question2']
 
-        x1 = map(lambda x: re.split(r'\W*', x.lower())[:-1] if isinstance(x, str) else '', x1)
-        x2 = map(lambda x: re.split(r'\W*', x.lower())[:-1] if isinstance(x, str) else '', x2)
+        x1 = map(lambda x: filter(lambda xx: len(xx)>0, re.split(r'\W*', str(x).lower())[:-1]) , x1)
+        x2 = map(lambda x: filter(lambda xx: len(xx)>0, re.split(r'\W*', str(x).lower())[:-1]) , x2)
 
 
         max_sent_len = max([max(map(lambda x: len(x), x1)), max(map(lambda x: len(x), x2))])
