@@ -32,9 +32,9 @@ def siamese(max_sent_len, wordvec_dim,gru_output_dim, output_dim):
         gru_sent_bwd.append(GRU(gru_output_dim, return_sequences=False, go_backwards = True, activation='tanh', inner_activation='hard_sigmoid', input_shape = (max_sent_len,wordvec_dim)))
 	gru_f.append(gru_sent_fwd[i](input_layers[i]))
 	gru_b.append(gru_sent_bwd[i](input_layers[i]))
-	#gru_f[i] = BatchNormalization()(gru_f[i])
+	gru_f[i] = BatchNormalization()(gru_f[i])
 	gru_f[i] = Activation('tanh')(gru_f[i])
-	#gru_b[i] = BatchNormalization()(gru_b[i])
+	gru_b[i] = BatchNormalization()(gru_b[i])
         gru_b[i] = Activation('tanh')(gru_b[i])
 	gru_merge = merge([gru_f[i], gru_b[i]], mode = 'concat', concat_axis = -1)
         gru_merge = Dense(20)(gru_merge)
@@ -49,7 +49,7 @@ def siamese(max_sent_len, wordvec_dim,gru_output_dim, output_dim):
     model = Dense(output_dim)(model)
 
     sgd = optimizers.SGD(lr=0.001, decay=1e-6, momentum=0.9, nesterov=True)
-    #model = BatchNormalization()(model)
+    model = BatchNormalization()(model)
     out_layer = Activation('softmax')(model)
     model = Model(input = input_layers, output = out_layer)
 
@@ -71,5 +71,42 @@ def dense_test(max_sent_len, wordvec_dim,gru_output_dim, output_dim):
     model.compile(loss = 'categorical_crossentropy', optimizer='adagrad', metrics = ['accuracy'])
     return model
 
-#def siamese_tfidf(max_sent_len, wordvec_dim, gru_output_dim, output_dim):
 
+
+def siamese_cnn_lstm(max_sent_len, wordvec_dim,gru_output_dim, output_dim):
+    #gru_sent_fwd = LSTM(gru_output_dim, return_sequences=False, go_backwards = False, activation='relu', inner_activation='hard_sigmoid', input_shape = (max_sent_len,wordvec_dim))
+    #gru_sent_bwd = LSTM(gru_output_dim, return_sequences=False, go_backwards = True, activation='relu', inner_activation='hard_sigmoid', input_shape = (max_sent_len,wordvec_dim))
+    #input_layers = []
+    gru_f, gru_b, gru_sent_fwd, gru_sent_bwd= [],[],[],[]
+    input_layers = [Input(shape = (max_sent_len, wordvec_dim)) for i in xrange(2)]
+    #input_2 = Input(shape = (max_sent_len, wordvec_dim))
+    siamese_sub_parts = []
+    for i in xrange(2):
+        gru_sent_fwd.append(GRU(gru_output_dim, return_sequences=False, go_backwards = False, activation='tanh', inner_activation='hard_sigmoid', input_shape = (max_sent_len,wordvec_dim)))
+        gru_sent_bwd.append(GRU(gru_output_dim, return_sequences=False, go_backwards = True, activation='tanh', inner_activation='hard_sigmoid', input_shape = (max_sent_len,wordvec_dim)))
+	gru_f.append(gru_sent_fwd[i](input_layers[i]))
+	gru_b.append(gru_sent_bwd[i](input_layers[i]))
+	gru_f[i] = BatchNormalization()(gru_f[i])
+	gru_f[i] = Activation('softmax')(gru_f[i])
+	gru_b[i] = BatchNormalization()(gru_b[i])
+        gru_b[i] = Activation('softmax')(gru_b[i])
+	gru_merge = merge([gru_f[i], gru_b[i]], mode = 'concat', concat_axis = -1)
+        gru_merge = Dense(20)(gru_merge)
+        #gru_merge = Dropout(0.25)(gru_merge)
+        #gru_merge = Dense(100)(gru_merge)
+        siamese_sub_parts.append(gru_merge)
+
+    #distance = Lambda(euclidean_distance, output_shape = eucl_dist_output_shape)(siamese_sub_parts)
+    #model = Dense(output_dim)(distance)
+
+    model = merge(siamese_sub_parts, mode = 'concat', concat_axis = -1)
+    model = Dense(output_dim)(model)
+
+    sgd = optimizers.SGD(lr=0.001, decay=1e-6, momentum=0.9, nesterov=True)
+    model = BatchNormalization()(model)
+    out_layer = Activation('softmax')(model)
+    model = Model(input = input_layers, output = out_layer)
+
+    model.compile(loss = 'categorical_crossentropy', optimizer='adagrad', metrics = ['accuracy'])
+
+    return model

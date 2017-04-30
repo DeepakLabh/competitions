@@ -179,7 +179,7 @@ if __name__ == '__main__':
         max_sent_len = max([max(map(lambda x: len(x), x1)), max(map(lambda x: len(x), x2))])
         max_sent_len = 60
 
-        index_training_data(50000)
+        index_training_data(100000)
 
     if sys.argv[-1] == 'predict': ### Sample prediction
 	import model_arch as ma

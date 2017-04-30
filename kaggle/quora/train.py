@@ -24,7 +24,7 @@ gru_output_dim = 50
 output_dim = 2
 train_size = 5000
 batch_size = 1000
-num_epoch = 200
+num_epoch = 100
 def batch_gen_2d(batch_size, start_index, end_index, only_tfidf = False):
     while True:
         i = randint(start_index, end_index)
@@ -64,7 +64,7 @@ if sys.argv[-1]=='only_tfidf':
     model = ma.siamese(max_sent_len, 1 , gru_output_dim, output_dim)
     only_tfidf = True
 #fit = model.fit_generator(generator=batch_gen_2d(500,1,10000), nb_epoch=30, samples_per_epoch=train_size)
-history = model.fit_generator(generator=batch_gen_2d(batch_size,1,39000, only_tfidf), nb_epoch = num_epoch, validation_data = batch_gen_2d(batch_size,44000,44010, only_tfidf), nb_val_samples = 1000, samples_per_epoch=train_size)
+history = model.fit_generator(generator=batch_gen_2d(batch_size,1,45000,only_tfidf),nb_epoch = num_epoch, validation_data = batch_gen_2d(batch_size,47000,47010, only_tfidf), nb_val_samples = 1000, samples_per_epoch=train_size)
 
 #plot_model(model, to_file='model.png')
 
