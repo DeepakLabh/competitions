@@ -139,7 +139,6 @@ def index_training_data(num_data):
 
 if __name__ == '__main__':
     c = MongoClient()
-    only_tfidf = True
     coll_vec = c.data.wordvec
     question1_collection = c.data.question1
     question2_collection = c.data.question2
@@ -185,9 +184,10 @@ if __name__ == '__main__':
 	import model_arch as ma
         tf = tfidf.tfidf('../quora_data/vec_train.txt')
 	q1,q2 = sys.argv[-3], sys.argv[-2]
+        only_tfidf = False
         if only_tfidf: wordvec_dim = 1
 	model = ma.siamese(max_sent_len, wordvec_dim, gru_output_dim, output_dim)
-	model.load_weights('../quora_data/siamese_lstm.weights')
+	model.load_weights('../quora_data/best.weights')
 	out = predict_similarity(q1, q2, coll_vec, model, only_tfidf)
 	print out,'  <<-------- OUTPUT'
 
@@ -198,11 +198,12 @@ if __name__ == '__main__':
     if sys.argv[-1] == 'sub': # for submission
         test_data = pd.read_csv('../quora_data/test.csv')
 	import model_arch as ma
+        only_tfidf = False
         tf = tfidf.tfidf('../quora_data/vec_train.txt')
 	#q1,q2 = sys.argv[-3], sys.argv[-2]
         if only_tfidf: wordvec_dim = 1
 	model = ma.siamese(max_sent_len, wordvec_dim, gru_output_dim, output_dim)
-	model.load_weights('../quora_data/siamese_lstm.weights')
+	model.load_weights('../quora_data/best.weights')
 
         df = pd.DataFrame(columns = ['test_id', 'is_duplicate'])
         #for i in xrange(len(test_data['id'])):

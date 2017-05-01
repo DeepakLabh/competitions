@@ -1,10 +1,7 @@
 *.pyc
 *.bkp
 screenlog*
-*.swp
-*.swo
-*.swm
-*.swn
+*.sw*
 no*
 *data*
 *json*
