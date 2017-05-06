@@ -76,6 +76,7 @@ def write_vectors(binary_file_path, vocab_file_path, c):
 
 def predict_similarity(question1, question2, vec_coll, model, only_tfidf=False, batch_size = 1):
     #print question1, question2
+    #wordvec_dim = 200
     q = map(lambda x: re.sub(r'\W+',' ',x.lower()) if isinstance(x, str) else '', [question1, question2])
     if only_tfidf:
         q_vec = map(lambda x: np.lib.pad(tf.vec(x)[:max_sent_len], (0,max(0,max_sent_len-len(tf.vec(x)))), 'constant', constant_values = (0)).reshape(1,max_sent_len,1), q)
@@ -84,8 +85,14 @@ def predict_similarity(question1, question2, vec_coll, model, only_tfidf=False, 
         pass
     q_vec = map(lambda x: map(lambda xx:np.array(vec_coll.find_one({'word': xx})['vec']) if vec_coll.find_one({'word': xx}) else np.zeros(wordvec_dim), x), q)
     q_vec = map(lambda x: x[:max_sent_len] if len(x) > max_sent_len else np.concatenate((x,np.zeros((max_sent_len-len(x), wordvec_dim))), axis = 0), q_vec)
+    #q_vec = map(lambda x: np.array(x).reshape((1, max_sent_len, wordvec_dim)), q_vec)
+    ##############################  load TFIDF vectors ##########
+    q_vec_tf = map(lambda x: np.lib.pad(tf.vec(x)[:max_sent_len], (0,max(0,max_sent_len-len(tf.vec(x)))), 'constant', constant_values = (0)).reshape(max_sent_len,1), q)
+    ##############################  load TFIDF vectors ##########
+    #print np.array(q_vec).shape, np.array(q_vec_tf).shape, 111111111, q_vec_tf
+    q_vec = map(lambda x,y: x*y, q_vec, q_vec_tf)
     q_vec = map(lambda x: np.array(x).reshape((1, max_sent_len, wordvec_dim)), q_vec)
-    print q_vec
+    #print q_vec
     out = model.predict(q_vec)
     return out
 
@@ -136,6 +143,58 @@ def index_training_data(num_data):
         except: print i
     #######################################3 For indexing question 2 ###################
 
+def create_test_data(start_index, end_index, q1, q2, wordvec_dict, df):
+    print 'create test data'
+    #x1 = map(lambda x: map(lambda xx: coll_vec.find_one({'word':xx})['vec'] if coll_vec.find_one({'word':xx})!=None else np.zeros(wordvec_dim), x), x1)
+    #x2 = map(lambda x: map(lambda xx: coll_vec.find_one({'word':xx})['vec'] if coll_vec.find_one({'word':xx})!=None else np.zeros(wordvec_dim), x), x2)
+    x1_train = []
+    x2_train = []
+    #############################################
+
+    #df = df.astype(int)
+    #############################################
+    #######################################3 For indexing question 1 ###################
+    for i in range(start_index, end_index):
+        #q1_tf_vec = tf.vec(' '.join(q1[i]))
+        q1_tf_vec = map(lambda x: np.lib.pad(tf.vec(x)[:max_sent_len], (0,max(0,max_sent_len-len(tf.vec(x)))), 'constant', constant_values = (0)).reshape(max_sent_len,1), q1[i])
+        q1_vec = []
+        #q2_tf_vec = tf.vec(' '.join(q2[i]))
+        q2_tf_vec = map(lambda x: np.lib.pad(tf.vec(x)[:max_sent_len], (0,max(0,max_sent_len-len(tf.vec(x)))), 'constant', constant_values = (0)).reshape(max_sent_len,1), q2[i])
+        q2_vec = []
+        for j in xrange(max_sent_len):
+            try:
+                if j>=len(q1[i]):
+                    q1_vec.append(np.zeros(wordvec_dim))
+                else:
+                    q1_vec.append(wordvec_dict[x1[i][j]])
+
+            except:
+               #if j>=len(x1[i]):
+                q1_vec.append(np.zeros(wordvec_dim))
+               # else:
+               #     x1[i][j] = np.zeros(wordvec_dim)
+
+            try:
+                if j>=len(q2[i]):
+                    q2_vec.append(np.zeros(wordvec_dim))
+                else:
+                    q2_vec.append(wordvec_dict[x2[i][j]])
+            except:
+                #if j>=len(x2[i]):
+                q2_vec.append(np.zeros(wordvec_dim))
+                #else:
+                #    x2[i][j] = np.zeros(wordvec_dim)
+        print np.array(q1_tf_vec).shape, np.array(q1_vec).shape
+        x1_train.append(np.array(q1_vec)*q1_tf_vec)
+        x2_train.append(np.array(q2_vec)*q2_tf_vec)
+        #df1 = pd.DataFrame([[int(test_data['test_id'][i]), q1_vec, q2_vec, q1_tf_vec, q2_tf_vec]], columns = ['test_id', 'q1', 'q2', 'q1_tf', 'q2_tf'])
+        #df = df.append(df1)
+        #question1_collection.insert_one({'_id':i, 'vec':np.array(x1_sents).tolist(), 'tf':x1_tfidf})
+        try: 1/(i%100)
+        except: print i
+    return np.array([x1_train, x2_train])
+    #######################################3 For indexing question 1 ###################
+
 
 if __name__ == '__main__':
     c = MongoClient()
@@ -143,7 +202,7 @@ if __name__ == '__main__':
     question1_collection = c.data.question1
     question2_collection = c.data.question2
     wordvec_dim = 200
-    max_sent_len = 10
+    max_sent_len = 30
     gru_output_dim = 50
     output_dim = 2
     if sys.argv[-1] == 'create_vocab': ### Create vocab of both train and test data
@@ -218,8 +277,31 @@ if __name__ == '__main__':
             df1 = pd.DataFrame([[int(test_data['test_id'][i]), int(out)]], columns = ['test_id', 'is_duplicate'])
             df = df.append(df1)
             i=i+1
-            if i%1000==0 : print i, df1, q1, q2,111111111
+            if i%10==0 : print i, df1, q1, q2,111111111
             #if i%10000==0: break
 
         df = df.astype(int)
         df.to_csv('../quora_data/Sample_submission_1.csv', index=False)
+
+
+    if sys.argv[-1] == 'create_test_data': # for submission
+        import json
+        test_data = pd.read_csv('../quora_data/test.csv')
+        tf = tfidf.tfidf('../quora_data/vec_train.txt')
+	import model_arch as ma
+        only_tfidf = False
+        if only_tfidf: wordvec_dim = 1
+	model = ma.siamese(max_sent_len, wordvec_dim, gru_output_dim, output_dim)
+	model.load_weights('../quora_data/best.weights')
+	#q1,q2 = sys.argv[-3], sys.argv[-2]
+        if only_tfidf: wordvec_dim = 1
+        df = pd.DataFrame(columns = ['test_id', 'q1', 'q2', 'q1_tf', 'q2_tf'])
+        wordvec_dict = json.load(open('../quora_data/wordvec.dict'))
+        q1 = test_data['question1']
+        q2 = test_data['question2']
+        q1 = map(lambda x: filter(lambda xx: len(xx)>0, re.split(r'\W*', str(x).lower())[:-1]) , q1)
+        q2 = map(lambda x: filter(lambda xx: len(xx)>0, re.split(r'\W*', str(x).lower())[:-1]) , q2)
+        print 'test data loaded, creating vectors'
+        df_out = create_test_data(0,1000, q1, q2, wordvec_dict, df)
+        out = model.predict(df_out, batch_size=1000)
+        print out
