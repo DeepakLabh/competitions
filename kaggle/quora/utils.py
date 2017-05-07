@@ -288,6 +288,7 @@ if __name__ == '__main__':
         import json
         test_data = pd.read_csv('../quora_data/test.csv')
         tf = tfidf.tfidf('../quora_data/vec_train.txt')
+	print 'tfidf vector class initialized ...'
 	import model_arch as ma
         only_tfidf = False
         if only_tfidf: wordvec_dim = 1
@@ -297,11 +298,15 @@ if __name__ == '__main__':
         if only_tfidf: wordvec_dim = 1
         df = pd.DataFrame(columns = ['test_id', 'q1', 'q2', 'q1_tf', 'q2_tf'])
         wordvec_dict = json.load(open('../quora_data/wordvec.dict'))
+	print 'wordvec dict loaded ...'
         q1 = test_data['question1']
         q2 = test_data['question2']
+	print 'questions data loaded ...'
         q1 = map(lambda x: filter(lambda xx: len(xx)>0, re.split(r'\W*', str(x).lower())[:-1]) , q1)
+	print 'question 1 data prepared ...'
         q2 = map(lambda x: filter(lambda xx: len(xx)>0, re.split(r'\W*', str(x).lower())[:-1]) , q2)
+	print 'question 2 data prepared ...'
         print 'test data loaded, creating vectors'
-        df_out = create_test_data(0,1000, q1, q2, wordvec_dict, df)
+        df_out = create_test_data(0,200, q1, q2, wordvec_dict, df)
         out = model.predict(df_out, batch_size=1000)
         print out
