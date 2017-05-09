@@ -173,7 +173,7 @@ def create_test_data(start_index, end_index, q1, q2, wordvec_dict, df):
                     q1_vec.append(wordvec_dict[q1[i][j]])
 
             except Exception as e1:
-                print e1, 'q1_vec creation error'
+                #print e1, 'q1_vec creation error'
                #if j>=len(x1[i]):
                 q1_vec.append(np.zeros(wordvec_dim))
                # else:
@@ -185,12 +185,12 @@ def create_test_data(start_index, end_index, q1, q2, wordvec_dict, df):
                 else:
                     q2_vec.append(wordvec_dict[q2[i][j]])
             except Exception as e1:
-                print e1, 'q1_vec creation error'
+                #print e1, 'q2_vec creation error'
                 #if j>=len(x2[i]):
                 q2_vec.append(np.zeros(wordvec_dim))
                 #else:
                 #    x2[i][j] = np.zeros(wordvec_dim)
-        print np.array(q1_tf_vec).shape, np.array(q1_vec).shape
+        #print np.array(q1_tf_vec).shape, np.array(q1_vec).shape
         x1_train.append(np.array(q1_vec))#*q1_tf_vec)
         #x_train.append([np.array(q1_vec)*q1_tf_vec , np.array(q2_vec)*q2_tf_vec])
         x2_train.append(np.array(q2_vec))#*q2_tf_vec)
@@ -275,7 +275,7 @@ if __name__ == '__main__':
         df = pd.DataFrame(columns = ['test_id', 'is_duplicate'])
         #for i in xrange(len(test_data['id'])):
         i = 0
-        while i<len(test_data):
+        while i<20:#len(test_data):
             #batch_data = test_data[i:i+batch_size]
             q1 = test_data['question1'][i]
             q2 = test_data['question2'][i]
@@ -315,11 +315,21 @@ if __name__ == '__main__':
         q2 = map(lambda x: filter(lambda xx: len(xx)>0, re.split(r'\W*', str(x).lower())[:-1]) , q2)
 	print 'question 2 data prepared ...'
         print 'test data loaded, creating vectors'
+        df_arr = []
         start_index = 0
         batch_size = 1000
-        end_index = len(q1)
+        end_index = 4090#len(q1)
         while start_index < end_index-batch_size:
-            df_out = create_test_data(start_index, end_index, q1, q2, wordvec_dict, df)
-            out = model.predict_on_batch(df_out, batch_size=batch_size)
+            cursor_index = start_index + batch_size
+            df_out = create_test_data(start_index, cursor_index, q1, q2, wordvec_dict, df)
+            out = model.predict_on_batch(df_out)
             out = map(lambda x: 1 if x[0]>x[1] else 0, out)
-            print out[:6]
+            test_id = test_data['test_id'][start_index: cursor_index]
+            df = pd.DataFrame({'test_id':test_id, 'is_duplicate':out})
+            df_arr.append(df)
+            if start_index>end_index-batch_size-batch_size: batch_size = batch_size/2
+            start_index += batch_size
+            print start_index
+
+        df_all = pd.concat(df_arr)
+        df_all.to_csv('../quora_data/sample_submission_batch.csv', index = False)
