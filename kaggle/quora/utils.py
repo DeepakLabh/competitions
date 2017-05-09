@@ -149,26 +149,31 @@ def create_test_data(start_index, end_index, q1, q2, wordvec_dict, df):
     #x2 = map(lambda x: map(lambda xx: coll_vec.find_one({'word':xx})['vec'] if coll_vec.find_one({'word':xx})!=None else np.zeros(wordvec_dim), x), x2)
     x1_train = []
     x2_train = []
+    x_train = []
     #############################################
 
     #df = df.astype(int)
     #############################################
     #######################################3 For indexing question 1 ###################
     for i in range(start_index, end_index):
+        q1[i] = ' '.join(q1[i])
+        q2[i] = ' '.join(q2[i])
         #q1_tf_vec = tf.vec(' '.join(q1[i]))
-        q1_tf_vec = map(lambda x: np.lib.pad(tf.vec(x)[:max_sent_len], (0,max(0,max_sent_len-len(tf.vec(x)))), 'constant', constant_values = (0)).reshape(max_sent_len,1), q1[i])
+        q1_tf_vec, q2_tf_vec = map(lambda x: np.lib.pad(tf.vec(x)[:max_sent_len], (0,max(0,max_sent_len-len(tf.vec(x)))), 'constant', constant_values = (0)).reshape(max_sent_len,1), [q1[i], q2[i]])
+        #print str(q1_tf_vec) ,str(q2_tf_vec), 11111111111
         q1_vec = []
         #q2_tf_vec = tf.vec(' '.join(q2[i]))
-        q2_tf_vec = map(lambda x: np.lib.pad(tf.vec(x)[:max_sent_len], (0,max(0,max_sent_len-len(tf.vec(x)))), 'constant', constant_values = (0)).reshape(max_sent_len,1), q2[i])
+        #q2_tf_vec = map(lambda x: np.lib.pad(tf.vec(x)[:max_sent_len], (0,max(0,max_sent_len-len(tf.vec(x)))), 'constant', constant_values = (0)).reshape(max_sent_len,1), q2[i])
         q2_vec = []
         for j in xrange(max_sent_len):
             try:
                 if j>=len(q1[i]):
                     q1_vec.append(np.zeros(wordvec_dim))
                 else:
-                    q1_vec.append(wordvec_dict[x1[i][j]])
+                    q1_vec.append(wordvec_dict[q1[i][j]])
 
-            except:
+            except Exception as e1:
+                print e1, 'q1_vec creation error'
                #if j>=len(x1[i]):
                 q1_vec.append(np.zeros(wordvec_dim))
                # else:
@@ -178,21 +183,24 @@ def create_test_data(start_index, end_index, q1, q2, wordvec_dict, df):
                 if j>=len(q2[i]):
                     q2_vec.append(np.zeros(wordvec_dim))
                 else:
-                    q2_vec.append(wordvec_dict[x2[i][j]])
-            except:
+                    q2_vec.append(wordvec_dict[q2[i][j]])
+            except Exception as e1:
+                print e1, 'q1_vec creation error'
                 #if j>=len(x2[i]):
                 q2_vec.append(np.zeros(wordvec_dim))
                 #else:
                 #    x2[i][j] = np.zeros(wordvec_dim)
         print np.array(q1_tf_vec).shape, np.array(q1_vec).shape
-        x1_train.append(np.array(q1_vec)*q1_tf_vec)
-        x2_train.append(np.array(q2_vec)*q2_tf_vec)
+        x1_train.append(np.array(q1_vec))#*q1_tf_vec)
+        #x_train.append([np.array(q1_vec)*q1_tf_vec , np.array(q2_vec)*q2_tf_vec])
+        x2_train.append(np.array(q2_vec))#*q2_tf_vec)
+        #print str(q1_vec[0]),2222222222
         #df1 = pd.DataFrame([[int(test_data['test_id'][i]), q1_vec, q2_vec, q1_tf_vec, q2_tf_vec]], columns = ['test_id', 'q1', 'q2', 'q1_tf', 'q2_tf'])
         #df = df.append(df1)
         #question1_collection.insert_one({'_id':i, 'vec':np.array(x1_sents).tolist(), 'tf':x1_tfidf})
         try: 1/(i%100)
         except: print i
-    return np.array([x1_train, x2_train])
+    return [np.array(x1_train), np.array(x2_train)]
     #######################################3 For indexing question 1 ###################
 
 
@@ -307,6 +315,11 @@ if __name__ == '__main__':
         q2 = map(lambda x: filter(lambda xx: len(xx)>0, re.split(r'\W*', str(x).lower())[:-1]) , q2)
 	print 'question 2 data prepared ...'
         print 'test data loaded, creating vectors'
-        df_out = create_test_data(0,200, q1, q2, wordvec_dict, df)
-        out = model.predict(df_out, batch_size=1000)
-        print out
+        start_index = 0
+        batch_size = 1000
+        end_index = len(q1)
+        while start_index < end_index-batch_size:
+            df_out = create_test_data(start_index, end_index, q1, q2, wordvec_dict, df)
+            out = model.predict_on_batch(df_out, batch_size=batch_size)
+            out = map(lambda x: 1 if x[0]>x[1] else 0, out)
+            print out[:6]
