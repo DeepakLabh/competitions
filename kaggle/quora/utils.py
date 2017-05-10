@@ -198,7 +198,7 @@ def create_test_data(start_index, end_index, q1, q2, wordvec_dict, df):
         #df1 = pd.DataFrame([[int(test_data['test_id'][i]), q1_vec, q2_vec, q1_tf_vec, q2_tf_vec]], columns = ['test_id', 'q1', 'q2', 'q1_tf', 'q2_tf'])
         #df = df.append(df1)
         #question1_collection.insert_one({'_id':i, 'vec':np.array(x1_sents).tolist(), 'tf':x1_tfidf})
-        try: 1/(i%100)
+        try: 1/(i%10000)
         except: print i
     return [np.array(x1_train), np.array(x2_train)]
     #######################################3 For indexing question 1 ###################
@@ -318,18 +318,21 @@ if __name__ == '__main__':
         df_arr = []
         start_index = 0
         batch_size = 1000
-        end_index = 4090#len(q1)
-        while start_index < end_index-batch_size:
+        end_index = len(q1)
+        while start_index < end_index:
             cursor_index = start_index + batch_size
-            df_out = create_test_data(start_index, cursor_index, q1, q2, wordvec_dict, df)
-            out = model.predict_on_batch(df_out)
-            out = map(lambda x: 1 if x[0]>x[1] else 0, out)
-            test_id = test_data['test_id'][start_index: cursor_index]
-            df = pd.DataFrame({'test_id':test_id, 'is_duplicate':out})
-            df_arr.append(df)
-            if start_index>end_index-batch_size-batch_size: batch_size = batch_size/2
-            start_index += batch_size
+            try:
+                df_out = create_test_data(start_index, cursor_index, q1, q2, wordvec_dict, df)
+                out = model.predict_on_batch(df_out)
+                out = map(lambda x: 1 if x[0]>x[1] else 0, out)
+                test_id = test_data['test_id'][start_index: cursor_index]
+                df = pd.DataFrame({'test_id':test_id, 'is_duplicate':out})
+                df_arr.append(df)
+                start_index = cursor_index
+                if end_index - cursor_index <= batch_size:
+                    batch_size = end_index - cursor_index
+            except: pass
             print start_index
 
         df_all = pd.concat(df_arr)
-        df_all.to_csv('../quora_data/sample_submission_batch.csv', index = False)
+        df_all.to_csv('../quora_data/sample_submission_batch.csv', index = False, columns = ['test_id', 'is_duplicate'])
