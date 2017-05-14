@@ -145,55 +145,40 @@ def index_training_data(num_data):
 
 def create_test_data(start_index, end_index, q1, q2, wordvec_dict, df):
     print 'create test data'
-    #x1 = map(lambda x: map(lambda xx: coll_vec.find_one({'word':xx})['vec'] if coll_vec.find_one({'word':xx})!=None else np.zeros(wordvec_dim), x), x1)
-    #x2 = map(lambda x: map(lambda xx: coll_vec.find_one({'word':xx})['vec'] if coll_vec.find_one({'word':xx})!=None else np.zeros(wordvec_dim), x), x2)
     x1_train = []
     x2_train = []
+    x_train = []
     #############################################
-
-    #df = df.astype(int)
-    #############################################
-    #######################################3 For indexing question 1 ###################
+    ###################################3 For indexing question 1 ###################
     for i in range(start_index, end_index):
-        #q1_tf_vec = tf.vec(' '.join(q1[i]))
-        q1_tf_vec = map(lambda x: np.lib.pad(tf.vec(x)[:max_sent_len], (0,max(0,max_sent_len-len(tf.vec(x)))), 'constant', constant_values = (0)).reshape(max_sent_len,1), q1[i])
+        q1[i] = ' '.join(q1[i])
+        q2[i] = ' '.join(q2[i])
+        q1_tf_vec, q2_tf_vec = map(lambda x: np.lib.pad(tf.vec(x)[:max_sent_len], (0,max(0,max_sent_len-len(tf.vec(x)))), 'constant', constant_values = (0)).reshape(max_sent_len,1), [q1[i], q2[i]])
         q1_vec = []
-        #q2_tf_vec = tf.vec(' '.join(q2[i]))
-        q2_tf_vec = map(lambda x: np.lib.pad(tf.vec(x)[:max_sent_len], (0,max(0,max_sent_len-len(tf.vec(x)))), 'constant', constant_values = (0)).reshape(max_sent_len,1), q2[i])
         q2_vec = []
         for j in xrange(max_sent_len):
             try:
                 if j>=len(q1[i]):
                     q1_vec.append(np.zeros(wordvec_dim))
                 else:
-                    q1_vec.append(wordvec_dict[x1[i][j]])
+                    q1_vec.append(wordvec_dict[q1[i][j]])
 
-            except:
-               #if j>=len(x1[i]):
+            except Exception as e1:
                 q1_vec.append(np.zeros(wordvec_dim))
-               # else:
-               #     x1[i][j] = np.zeros(wordvec_dim)
 
             try:
                 if j>=len(q2[i]):
                     q2_vec.append(np.zeros(wordvec_dim))
                 else:
-                    q2_vec.append(wordvec_dict[x2[i][j]])
-            except:
-                #if j>=len(x2[i]):
+                    q2_vec.append(wordvec_dict[q2[i][j]])
+            except Exception as e1:
                 q2_vec.append(np.zeros(wordvec_dim))
-                #else:
-                #    x2[i][j] = np.zeros(wordvec_dim)
-        print np.array(q1_tf_vec).shape, np.array(q1_vec).shape
         x1_train.append(np.array(q1_vec)*q1_tf_vec)
         x2_train.append(np.array(q2_vec)*q2_tf_vec)
-        #df1 = pd.DataFrame([[int(test_data['test_id'][i]), q1_vec, q2_vec, q1_tf_vec, q2_tf_vec]], columns = ['test_id', 'q1', 'q2', 'q1_tf', 'q2_tf'])
-        #df = df.append(df1)
-        #question1_collection.insert_one({'_id':i, 'vec':np.array(x1_sents).tolist(), 'tf':x1_tfidf})
-        try: 1/(i%100)
+        try: 1/(i%10000)
         except: print i
-    return np.array([x1_train, x2_train])
-    #######################################3 For indexing question 1 ###################
+    return [np.array(x1_train), np.array(x2_train)]
+    ###################################3 For indexing question 1 ###################
 
 
 if __name__ == '__main__':
@@ -267,7 +252,7 @@ if __name__ == '__main__':
         df = pd.DataFrame(columns = ['test_id', 'is_duplicate'])
         #for i in xrange(len(test_data['id'])):
         i = 0
-        while i<len(test_data):
+        while i<20:#len(test_data):
             #batch_data = test_data[i:i+batch_size]
             q1 = test_data['question1'][i]
             q2 = test_data['question2'][i]
@@ -288,6 +273,7 @@ if __name__ == '__main__':
         import json
         test_data = pd.read_csv('../quora_data/test.csv')
         tf = tfidf.tfidf('../quora_data/vec_train.txt')
+	print 'tfidf vector class initialized ...'
 	import model_arch as ma
         only_tfidf = False
         if only_tfidf: wordvec_dim = 1
@@ -297,11 +283,33 @@ if __name__ == '__main__':
         if only_tfidf: wordvec_dim = 1
         df = pd.DataFrame(columns = ['test_id', 'q1', 'q2', 'q1_tf', 'q2_tf'])
         wordvec_dict = json.load(open('../quora_data/wordvec.dict'))
+	print 'wordvec dict loaded ...'
         q1 = test_data['question1']
         q2 = test_data['question2']
+	print 'questions data loaded ...'
         q1 = map(lambda x: filter(lambda xx: len(xx)>0, re.split(r'\W*', str(x).lower())[:-1]) , q1)
+	print 'question 1 data prepared ...'
         q2 = map(lambda x: filter(lambda xx: len(xx)>0, re.split(r'\W*', str(x).lower())[:-1]) , q2)
+	print 'question 2 data prepared ...'
         print 'test data loaded, creating vectors'
-        df_out = create_test_data(0,1000, q1, q2, wordvec_dict, df)
-        out = model.predict(df_out, batch_size=1000)
-        print out
+        df_arr = []
+        start_index = 0
+        batch_size = 1000
+        end_index = len(q1)
+        while start_index < end_index:
+            cursor_index = start_index + batch_size
+            try:
+                df_out = create_test_data(start_index, cursor_index, q1, q2, wordvec_dict, df)
+                out = model.predict_on_batch(df_out)
+                out = map(lambda x: 1 if x[0]>x[1] else 0, out)
+                test_id = test_data['test_id'][start_index: cursor_index]
+                df = pd.DataFrame({'test_id':test_id, 'is_duplicate':out})
+                df_arr.append(df)
+                start_index = cursor_index
+                if end_index - cursor_index <= batch_size:
+                    batch_size = end_index - cursor_index
+            except: pass
+            print start_index
+
+        df_all = pd.concat(df_arr)
+        df_all.to_csv('../quora_data/sample_submission_batch.csv', index = False, columns = ['test_id', 'is_duplicate'])

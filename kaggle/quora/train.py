@@ -9,6 +9,7 @@ import re
 from random import randint
 import matplotlib.pyplot as plt
 from keras.callbacks import ModelCheckpoint
+from NLPutilsDL import doc2vec
 
 #import pickle as pk
 #import gzip
@@ -30,33 +31,26 @@ num_epoch = 100
 def batch_gen_2d(batch_size, start_index, end_index, only_tfidf = False, tfidf_x_wordvec = True):
     while True:
         i = randint(start_index, end_index)
-        #i = randint(1, 1000)
-	#i = 1
-	#print '    ',i,' iiiiiiiiiii2'
         y_batch = np.array(map(lambda x: np.array([1,0] if x==1 else [0,1]),y[i:i+batch_size]))
-        x_batch2 = map(lambda x: np.array(x['vec'][:max_sent_len]), list(question2_collection.find({'_id': {'$gte': i, '$lt': i+batch_size}})))
-        x_batch1 = map(lambda x: np.array(x['vec'][:max_sent_len]), list(question1_collection.find({'_id': {'$gte': i, '$lt': i+batch_size}})))
-        #x_batch = map(lambda x: np.reshape(np.array(x), (input_shape[0], x_train.shape[1])),x_batch) # 10 is nu of recurrent layers
+        dd = doc2vec.data('../quora_data/train.csv', 'csv', coll_vec)
+        x_batch2 = dd.create_vectors('question2', 'word', 'vec', max_sent_len = 50, max_num_sents = 4, wordvec_dim = wordvec_dim, sent_tokenize_flag = False, start_index=i, end_index=i+batch_size)
+        x_batch1 = dd.create_vectors('question1', 'word', 'vec', max_sent_len = 50, max_num_sents = 4, wordvec_dim = wordvec_dim, sent_tokenize_flag = False, start_index=i, end_index=i+batch_size)
         ############ To normalize the inputs ############3
 
         if only_tfidf or tfidf_x_wordvec:
-            x_batch1_tf = map(lambda x: np.array(x['tf'][:max_sent_len] if len(x['tf'])>= max_sent_len else x['tf']+list(np.zeros(max_sent_len-len(x['tf'])))), list(question1_collection.find({'_id': {'$gte': i, '$lt': i+batch_size}})))
-            x_batch2_tf = map(lambda x: np.array(x['tf'][:max_sent_len] if len(x['tf'])>= max_sent_len else x['tf']+list(np.zeros(max_sent_len-len(x['tf'])))), list(question2_collection.find({'_id': {'$gte': i, '$lt': i+batch_size}})))
+            x_batch1_tf = map(lambda x: np.array(x[:max_sent_len] if len(x)>= max_sent_len else x+list(np.zeros(max_sent_len-len(x)))), dd.create_tfidf_vectors('question1', i , i+batch_size))
+            x_batch1_tf = map(lambda x: np.array(x[:max_sent_len] if len(x)>= max_sent_len else x+list(np.zeros(max_sent_len-len(x)))), dd.create_tfidf_vectors('question2', i , i+batch_size))
             x_batch1_tf = np.array(x_batch1_tf).reshape(batch_size, max_sent_len, 1)
             x_batch2_tf = np.array(x_batch2_tf).reshape(batch_size, max_sent_len, 1)
             if only_tfidf:
                 yield [x_batch1_tf, x_batch2_tf], y_batch
                 continue
 
-        x_batch1 = map(lambda x: map(lambda xx: abs(xx)-abs(x.mean()), x), x_batch1)
-        x_batch2 = map(lambda x: map(lambda xx: abs(xx)-abs(x.mean()), x), x_batch2)
+        #x_batch1 = map(lambda x: map(lambda xx: abs(xx)-abs(x.mean()), x), x_batch1)
+        #x_batch2 = map(lambda x: map(lambda xx: abs(xx)-abs(x.mean()), x), x_batch2)
         ############ To normalize the inputs ############3
         x_batch1, x_batch2 = [np.array(x_batch1), np.array(x_batch2)]
-        #print x_batch1.shape, x_batch1_tf.shape, x_batch2.shape, x_batch2_tf.shape
-        #x_batch1 = np.array(map(lambda x,yy:np.multiply(x.transpose(),yy).transpose(), x_batch1, x_batch1_tf))
-        #x_batch2 = np.array(map(lambda x,yy:np.multiply(x.transpose(),yy).transpose(), x_batch2, x_batch2_tf))
         ############################  for vec * tfidf ################################
-        #print y_batch,111111111111111
         if tfidf_x_wordvec:
             yield ([x_batch1*x_batch1_tf, x_batch2*x_batch2_tf], y_batch)
             continue
