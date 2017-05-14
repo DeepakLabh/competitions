@@ -10,10 +10,48 @@ from random import randint
 import matplotlib.pyplot as plt
 from keras.callbacks import ModelCheckpoint
 from NLPutilsDL import doc2vec
+import utils
+import tfidf
 
 #import pickle as pk
 #import gzip
 
+def create_test_data(start_index, end_index, q1, q2, wordvec_dict, df):
+    print 'create test data'
+    x1_train = []
+    x2_train = []
+    x_train = []
+    #############################################
+    ###################################3 For indexing question 1 ###################
+    for i in range(start_index, end_index):
+        q1[i] = ' '.join(q1[i])
+        q2[i] = ' '.join(q2[i])
+        q1_tf_vec, q2_tf_vec = map(lambda x: np.lib.pad(tf.vec(x)[:max_sent_len], (0,max(0,max_sent_len-len(tf.vec(x)))), 'constant', constant_values = (0)).reshape(max_sent_len,1), [q1[i], q2[i]])
+        q1_vec = []
+        q2_vec = []
+        for j in xrange(max_sent_len):
+            try:
+                if j>=len(q1[i]):
+                    q1_vec.append(np.zeros(wordvec_dim))
+                else:
+                    q1_vec.append(wordvec_dict[q1[i][j]])
+
+            except Exception as e1:
+                q1_vec.append(np.zeros(wordvec_dim))
+
+            try:
+                if j>=len(q2[i]):
+                    q2_vec.append(np.zeros(wordvec_dim))
+                else:
+                    q2_vec.append(wordvec_dict[q2[i][j]])
+            except Exception as e1:
+                q2_vec.append(np.zeros(wordvec_dim))
+        x1_train.append(np.array(q1_vec)*q1_tf_vec)
+        x2_train.append(np.array(q2_vec)*q2_tf_vec)
+        try: 1/(i%10000)
+        except: print i
+    return [np.array(x1_train), np.array(x2_train)]
+    ###################################3 For indexing question 1 ###################
 matplotlib.use('Agg')
 c = MongoClient()
 coll_vec = c.data.wordvec
@@ -28,34 +66,56 @@ output_dim = 2
 train_size = 5000
 batch_size = 1000
 num_epoch = 100
+#############################
+import json
+test_data = pd.read_csv('../quora_data/train.csv')
+tf = tfidf.tfidf('../quora_data/vec_train.txt')
+print 'tfidf vector class initialized ...'
+only_tfidf = False
+if only_tfidf: wordvec_dim = 1
+wordvec_dict = json.load(open('../quora_data/wordvec.dict'))
+print 'wordvec dict loaded ...'
+q1 = test_data['question1']
+q2 = test_data['question2']
+print 'questions data loaded ...'
+q1 = map(lambda x: filter(lambda xx: len(xx)>0, re.split(r'\W*', str(x).lower())[:-1]) , q1)
+print 'question 1 data prepared ...'
+q2 = map(lambda x: filter(lambda xx: len(xx)>0, re.split(r'\W*', str(x).lower())[:-1]) , q2)
+print 'question 2 data prepared ...'
+print 'train data loaded, creating vectors'
+#####################################
 def batch_gen_2d(batch_size, start_index, end_index, only_tfidf = False, tfidf_x_wordvec = True):
     while True:
         i = randint(start_index, end_index)
         y_batch = np.array(map(lambda x: np.array([1,0] if x==1 else [0,1]),y[i:i+batch_size]))
-        dd = doc2vec.data('../quora_data/train.csv', 'csv', coll_vec)
-        x_batch2 = dd.create_vectors('question2', 'word', 'vec', max_sent_len = 50, max_num_sents = 4, wordvec_dim = wordvec_dim, sent_tokenize_flag = False, start_index=i, end_index=i+batch_size)
-        x_batch1 = dd.create_vectors('question1', 'word', 'vec', max_sent_len = 50, max_num_sents = 4, wordvec_dim = wordvec_dim, sent_tokenize_flag = False, start_index=i, end_index=i+batch_size)
-        ############ To normalize the inputs ############3
+        df = pd.DataFrame(columns = ['test_id', 'q1', 'q2', 'q1_tf', 'q2_tf'])
+        df_out = create_test_data(i, i+batch_size, q1, q2, wordvec_dict, df)
 
-        if only_tfidf or tfidf_x_wordvec:
-            x_batch1_tf = map(lambda x: np.array(x[:max_sent_len] if len(x)>= max_sent_len else x+list(np.zeros(max_sent_len-len(x)))), dd.create_tfidf_vectors('question1', i , i+batch_size))
-            x_batch1_tf = map(lambda x: np.array(x[:max_sent_len] if len(x)>= max_sent_len else x+list(np.zeros(max_sent_len-len(x)))), dd.create_tfidf_vectors('question2', i , i+batch_size))
-            x_batch1_tf = np.array(x_batch1_tf).reshape(batch_size, max_sent_len, 1)
-            x_batch2_tf = np.array(x_batch2_tf).reshape(batch_size, max_sent_len, 1)
-            if only_tfidf:
-                yield [x_batch1_tf, x_batch2_tf], y_batch
-                continue
+        #dd = doc2vec.data('../quora_data/train.csv', 'csv', coll_vec)
+        #x_batch2 = dd.create_vectors('question2', 'word', 'vec', max_sent_len = 50, max_num_sents = 4, wordvec_dim = wordvec_dim, sent_tokenize_flag = False, start_index=i, end_index=i+batch_size)
+        #x_batch1 = dd.create_vectors('question1', 'word', 'vec', max_sent_len = 50, max_num_sents = 4, wordvec_dim = wordvec_dim, sent_tokenize_flag = False, start_index=i, end_index=i+batch_size)
+        ############# To normalize the inputs ############3
 
-        #x_batch1 = map(lambda x: map(lambda xx: abs(xx)-abs(x.mean()), x), x_batch1)
-        #x_batch2 = map(lambda x: map(lambda xx: abs(xx)-abs(x.mean()), x), x_batch2)
-        ############ To normalize the inputs ############3
-        x_batch1, x_batch2 = [np.array(x_batch1), np.array(x_batch2)]
-        ############################  for vec * tfidf ################################
-        if tfidf_x_wordvec:
-            yield ([x_batch1*x_batch1_tf, x_batch2*x_batch2_tf], y_batch)
-            continue
-        ############################  for vec * tfidf ################################
-        yield ([x_batch1, x_batch2], y_batch)
+        #if only_tfidf or tfidf_x_wordvec:
+        #    x_batch1_tf = map(lambda x: np.array(x[:max_sent_len] if len(x)>= max_sent_len else x+list(np.zeros(max_sent_len-len(x)))), dd.create_tfidf_vectors('question1', i , i+batch_size))
+        #    x_batch1_tf = map(lambda x: np.array(x[:max_sent_len] if len(x)>= max_sent_len else x+list(np.zeros(max_sent_len-len(x)))), dd.create_tfidf_vectors('question2', i , i+batch_size))
+        #    x_batch1_tf = np.array(x_batch1_tf).reshape(batch_size, max_sent_len, 1)
+        #    x_batch2_tf = np.array(x_batch2_tf).reshape(batch_size, max_sent_len, 1)
+        #    if only_tfidf:
+        #        yield [x_batch1_tf, x_batch2_tf], y_batch
+        #        continue
+
+        ##x_batch1 = map(lambda x: map(lambda xx: abs(xx)-abs(x.mean()), x), x_batch1)
+        ##x_batch2 = map(lambda x: map(lambda xx: abs(xx)-abs(x.mean()), x), x_batch2)
+        ############# To normalize the inputs ############3
+        #x_batch1, x_batch2 = [np.array(x_batch1), np.array(x_batch2)]
+        #############################  for vec * tfidf ################################
+        #if tfidf_x_wordvec:
+        #    yield ([x_batch1*x_batch1_tf, x_batch2*x_batch2_tf], y_batch)
+        #    continue
+        #############################  for vec * tfidf ################################
+        #yield ([x_batch1, x_batch2], y_batch)
+        yield (df_out, y_batch)
         # break
 
 
