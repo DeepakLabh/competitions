@@ -12,12 +12,23 @@ from keras.callbacks import ModelCheckpoint
 from NLPutilsDL import doc2vec
 import utils
 import tfidf
+import threading
 
 #import pickle as pk
 #import gzip
 
+def synchronized(func):
+
+    func.__lock__ = threading.Lock()
+
+    def synced_func(*args, **kws):
+        with func.__lock__:
+            return func(*args, **kws)
+
+    return synced_func
+@synchronized
 def create_test_data(start_index, end_index, q1, q2, wordvec_dict, df):
-    print 'create test data'
+    #print 'create test data'
     x1_train = []
     x2_train = []
     x_train = []
@@ -26,32 +37,38 @@ def create_test_data(start_index, end_index, q1, q2, wordvec_dict, df):
     for i in range(start_index, end_index):
         q1[i] = ' '.join(q1[i])
         q2[i] = ' '.join(q2[i])
-        q1_tf_vec, q2_tf_vec = map(lambda x: np.lib.pad(tf.vec(x)[:max_sent_len], (0,max(0,max_sent_len-len(tf.vec(x)))), 'constant', constant_values = (0)).reshape(max_sent_len,1), [q1[i], q2[i]])
-        q1_vec = []
-        q2_vec = []
-        for j in xrange(max_sent_len):
-            try:
-                if j>=len(q1[i]):
+        try:
+            q1_tf_vec, q2_tf_vec = map(lambda x: np.lib.pad(tf.vec(x)[:max_sent_len], (0,max(0,max_sent_len-len(tf.vec(x)))), 'constant', constant_values = (0)).reshape(max_sent_len,1), [q1[i], q2[i]])
+            q1_vec = []
+            q2_vec = []
+            for j in xrange(max_sent_len):
+                try:
+                    if j>=len(q1[i]):
+                        q1_vec.append(np.zeros(wordvec_dim))
+                    else:
+                        q1_vec.append(wordvec_dict[q1[i][j]])
+
+                except Exception as e1:
                     q1_vec.append(np.zeros(wordvec_dim))
-                else:
-                    q1_vec.append(wordvec_dict[q1[i][j]])
 
-            except Exception as e1:
-                q1_vec.append(np.zeros(wordvec_dim))
-
-            try:
-                if j>=len(q2[i]):
+                try:
+                    if j>=len(q2[i]):
+                        q2_vec.append(np.zeros(wordvec_dim))
+                    else:
+                        q2_vec.append(wordvec_dict[q2[i][j]])
+                except Exception as e1:
                     q2_vec.append(np.zeros(wordvec_dim))
-                else:
-                    q2_vec.append(wordvec_dict[q2[i][j]])
-            except Exception as e1:
-                q2_vec.append(np.zeros(wordvec_dim))
-        x1_train.append(np.array(q1_vec)*q1_tf_vec)
-        x2_train.append(np.array(q2_vec)*q2_tf_vec)
+            x1_train.append(np.array(q1_vec)*q1_tf_vec)
+            x2_train.append(np.array(q2_vec)*q2_tf_vec)
+        except:
+            x1_train.append(x1_train[-1])
+            x2_train.append(x2_train[-1])
+
         try: 1/(i%10000)
         except: print i
     return [np.array(x1_train), np.array(x2_train)]
     ###################################3 For indexing question 1 ###################
+
 matplotlib.use('Agg')
 c = MongoClient()
 coll_vec = c.data.wordvec
@@ -84,6 +101,8 @@ q2 = map(lambda x: filter(lambda xx: len(xx)>0, re.split(r'\W*', str(x).lower())
 print 'question 2 data prepared ...'
 print 'train data loaded, creating vectors'
 #####################################
+
+@synchronized
 def batch_gen_2d(batch_size, start_index, end_index, only_tfidf = False, tfidf_x_wordvec = True):
     while True:
         i = randint(start_index, end_index)
@@ -128,7 +147,7 @@ if sys.argv[-1]=='only_tfidf':
     only_tfidf = True
 checkpoint = ModelCheckpoint('../quora_data/best.weights', monitor='val_acc', save_best_only=True, verbose=2)
 #fit = model.fit_generator(generator=batch_gen_2d(500,1,10000), nb_epoch=30, samples_per_epoch=train_size)
-history = model.fit_generator(generator=batch_gen_2d(batch_size,1,90000,only_tfidf),nb_epoch = num_epoch, validation_data = batch_gen_2d(batch_size,95000,98010, only_tfidf), nb_val_samples = 1000, samples_per_epoch=train_size, callbacks=[checkpoint])
+history = model.fit_generator(generator=batch_gen_2d(batch_size,1,390000,only_tfidf),nb_epoch = num_epoch, validation_data = batch_gen_2d(batch_size,395000,398010, only_tfidf), nb_val_samples = 1000, samples_per_epoch=train_size, callbacks=[checkpoint])
 
 #plot_model(model, to_file='model.png')
 

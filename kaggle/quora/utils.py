@@ -143,8 +143,8 @@ def index_training_data(num_data):
         except: print i
     #######################################3 For indexing question 2 ###################
 
-def create_test_data(start_index, end_index, q1, q2, wordvec_dict, df, tf):
-    print 'create test data'
+def create_test_data(start_index, end_index, q1, q2, wordvec_dict, df):
+    #print 'create test data'
     x1_train = []
     x2_train = []
     x_train = []
@@ -299,7 +299,7 @@ if __name__ == '__main__':
         while start_index < end_index:
             cursor_index = start_index + batch_size
             try:
-                df_out = create_test_data(start_index, cursor_index, q1, q2, wordvec_dict, df, tf)
+                df_out = create_test_data(start_index, cursor_index, q1, q2, wordvec_dict, df)
                 out = model.predict_on_batch(df_out)
                 out = map(lambda x: 1 if x[0]>x[1] else 0, out)
                 test_id = test_data['test_id'][start_index: cursor_index]

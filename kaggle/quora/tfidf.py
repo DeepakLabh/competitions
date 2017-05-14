@@ -27,6 +27,8 @@ class tfidf(object):
         return i
 
     def vec(self, sent):
-        word_list = re.split(r'\W*', sent.lower())
-        vect = map(lambda word: self.tf(word, sent)*self.idf(word, sent), word_list)
+        try:
+            word_list = re.split(r'\W*', sent.lower())
+            vect = map(lambda word: self.tf(word, sent)*self.idf(word, sent), word_list)
+        except: vect = [1 for i in xrange(60)]
         return vect
