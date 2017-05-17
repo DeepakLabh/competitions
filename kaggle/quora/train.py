@@ -139,7 +139,7 @@ def batch_gen_2d(batch_size, start_index, end_index, only_tfidf = False, tfidf_x
 
 
 model = ma.siamese(max_sent_len, wordvec_dim, gru_output_dim, output_dim)
-
+model.load_weights('../quora_data/best.weights')
 print 'fitting model ...'
 only_tfidf = False
 if sys.argv[-1]=='only_tfidf':

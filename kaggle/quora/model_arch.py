@@ -11,39 +11,51 @@ from keras import optimizers
 
 import numpy as np
 
+
 def euclidean_distance(vects):
     x, y = vects
-    return K.sqrt(K.sum(K.square(x - y), axis=1, keepdims=True))
+    return K.sqrt(K.maximum(K.sum(K.square(x - y), axis=1, keepdims=True), K.epsilon()))
+
 
 def eucl_dist_output_shape(shapes):
     shape1, shape2 = shapes
     return (shape1[0], 1)
+
+
+def contrastive_loss(y_true, y_pred):
+    '''Contrastive loss from Hadsell-et-al.'06
+    http://yann.lecun.com/exdb/publis/pdf/hadsell-chopra-lecun-06.pdf
+    '''
+    margin = 1
+    return K.mean(y_true * K.square(y_pred) + (1 - y_true) * K.square(K.maximum(margin - y_pred, 0)))
 
 def siamese(max_sent_len, wordvec_dim,gru_output_dim, output_dim):
     gru_f, gru_b, gru_sent_fwd, gru_sent_bwd= [],[],[],[]
     input_layers = [Input(shape = (max_sent_len, wordvec_dim)) for i in xrange(2)]
     siamese_sub_parts = []
     for i in xrange(2):
-        gru_sent_fwd.append(GRU(gru_output_dim, return_sequences=False, go_backwards = False, activation='tanh', inner_activation='hard_sigmoid', input_shape = (max_sent_len,wordvec_dim)))
+        gru_sent_fwd.append(GRU(gru_output_dim, return_sequences=True, go_backwards = False, activation='tanh', inner_activation='hard_sigmoid', input_shape = (max_sent_len,wordvec_dim)))
         gru_sent_bwd.append(GRU(gru_output_dim, return_sequences=False, go_backwards = True, activation='tanh', inner_activation='hard_sigmoid', input_shape = (max_sent_len,wordvec_dim)))
 	gru_f.append(gru_sent_fwd[i](input_layers[i]))
 	gru_b.append(gru_sent_bwd[i](input_layers[i]))
 	gru_f[i] = BatchNormalization()(gru_f[i])
+	gru_f[i] = Flatten()(gru_f[i])
 	gru_f[i] = Activation('tanh')(gru_f[i])
-	gru_b[i] = BatchNormalization()(gru_b[i])
-        gru_b[i] = Activation('tanh')(gru_b[i])
-	gru_merge = merge([gru_f[i], gru_b[i]], mode = 'concat', concat_axis = -1)
+	#gru_b[i] = BatchNormalization()(gru_b[i])
+        #gru_b[i] = Activation('tanh')(gru_b[i])
+	#gru_merge = merge([gru_f[i], gru_b[i]], mode = 'concat', concat_axis = -1)
+	gru_merge = gru_f[i]
         gru_merge = Dropout(0.20)(gru_merge)
         gru_merge = Dense(20)(gru_merge)
         gru_merge = Dropout(0.25)(gru_merge)
-        gru_merge = Dense(100)(gru_merge)
+        gru_merge = Dense(50)(gru_merge)
         siamese_sub_parts.append(gru_merge)
 
-    model = merge(siamese_sub_parts, mode = 'concat', concat_axis = -1)
-    model = Dense(output_dim)(model)
+    distance = Lambda(euclidean_distance, output_shape=eucl_dist_output_shape)(siamese_sub_parts)
+    #model = merge(siamese_sub_parts, mode = 'cos', concat_axis = -1)
+    model = Dense(output_dim)(distance)
 
     sgd = optimizers.SGD(lr=0.001, decay=1e-6, momentum=0.9, nesterov=True)
-    model = BatchNormalization()(model)
     out_layer = Activation('softmax')(model)
     model = Model(input = input_layers, output = out_layer)
 
